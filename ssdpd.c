@@ -49,6 +49,7 @@ int      running = 1;
 size_t   ifnum = 0;
 ifsock_t iflist[MAX_NUM_IFACES];
 
+char uuid[42];
 in_addr_t graal;
 
 unsigned short in_cksum(unsigned short *addr, int len);
@@ -281,6 +282,8 @@ int main(int argc, char *argv[])
 	}
 
 	signal_init();
+
+	snprintf(uuid, sizeof(uuid), "%8x-%8x-%8x-%8x", rand(), rand(), rand(), rand());
 
 	for (i = optind; i < argc; i++)
 		open_ssdp_socket(argv[i]);
