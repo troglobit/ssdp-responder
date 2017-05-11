@@ -160,10 +160,11 @@ static void getifaddr(int sd, char *host, size_t len)
 	freeifaddrs(ifaddrs);
 }
 
-static void compose_addr(struct sockaddr_in *sin, char *group)
+static void compose_addr(struct sockaddr_in *sin, char *group, int port)
 {
 	memset(sin, 0, sizeof(*sin));
 	sin->sin_family      = AF_INET;
+	sin->sin_port        = htons(MC_SSDP_PORT);
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
@@ -241,7 +242,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 
 	if (!sa) {
 		note = 1;
-		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP);
+		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 		sa = &dest;
 		salen = sizeof(dest);
 	}
