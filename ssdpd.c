@@ -408,9 +408,14 @@ int main(int argc, char *argv[])
 
 	signal_init();
 
-//	snprintf(uuid, sizeof(uuid), "%8x-%4x-%4x-%12x", rand(), rand(), rand(), rand());
-	snprintf(uuid, sizeof(uuid), "1e81a192-1aa2-4b42-a36f-e141819faf3d");
-
+	/* https://en.wikipedia.org/wiki/Universally_unique_identifier */
+	snprintf(uuid, sizeof(uuid), "%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
+		 rand() & 0xFFFFFFFF,
+		 rand() & 0xFFFF,
+		 (rand() & 0x0FFF) | 0x4000, /* M  4 MSB version => version 4 */
+		 (rand() & 0x1FFF) | 0x8000, /* N: 3 MSB variant => variant 1 */
+		 rand() & 0xFFFFFF, rand() & 0xFFFFFF);
+//	printf("UUID: %s\n", uuid);
 	for (i = optind; i < argc; i++)
 		open_ssdp_socket(argv[i]);
 	open_web_socket(NULL);
