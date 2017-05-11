@@ -309,10 +309,8 @@ static void ssdp_recv(int sd)
 		if (uh->uh_dport != htons(MC_SSDP_PORT))
 			return;
 
-		if (sa.sa_family != AF_INET) {
-//			warnx("IPv6 not supported (yet)");
+		if (sa.sa_family != AF_INET)
 			return;
-		}
 
 		http = (char *)(uh + sizeof(struct udphdr));
 		http = (char *)(buf + (ip->ip_hl << 2) + sizeof(struct udphdr));
