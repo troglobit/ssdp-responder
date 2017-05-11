@@ -59,18 +59,7 @@ const char *xml =
 	"  <modelNumber>v5</modelNumber>\r\n"
 	"  <modelURL>http://www.westermo.com/</modelURL>\r\n"
 	"  <serialNumber>0000001</serialNumber>\r\n"
-	"  <UDN>DummyUDN1</UDN>\r\n"
-	"  <UPC>00000-00001</UPC>\r\n"
-	"\r\n"
-	"  <iconList>\r\n"
-	"   <icon>\r\n"
-        "    <mimetype>image/png</mimetype>\r\n"
-        "    <width>151</width>\r\n"
-        "    <height>133</height>\r\n"
-        "    <depth>16</depth>\r\n"
-        "    <url>weos.png</url>\r\n"
-	"   </icon>\r\n"
-	"  </iconList>\r\n"
+	"  <UDN>uuid:%s</UDN>\r\n"
 	"\r\n"
 	"  <presentationURL>http://%s</presentationURL>\r\n"
 	"\r\n"
@@ -156,7 +145,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 //		printf("Sending XML reply ...\n");
 		send(sd, "HTTP/1.0 200 OK\r\n\r\n", 19, 0);
-		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, inet_ntoa(sin->sin_addr));
+		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, uuid, inet_ntoa(sin->sin_addr));
 		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
 			warn("Failed sending file to client");
 
