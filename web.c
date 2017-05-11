@@ -125,7 +125,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		goto error;
 	}
 
-	printf("%s", mesg);
+//	printf("%s", mesg);
 	reqline[0] = strtok(mesg, " \t\n");
 	if (strncmp(reqline[0], "GET\0", 4) == 0) {
 		reqline[1] = strtok(NULL, " \t");
@@ -141,7 +141,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 		strcpy(path, root);
 		strcpy(&path[strlen(root)], reqline[1]);
-		printf("file: %s\n", path);
+//		printf("file: %s\n", path);
 
 		if (!strstr(path, "description.xml")) {
 //		if ((fd = open(path, O_RDONLY)) < 0) {
@@ -163,7 +163,6 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 //			}
 //		}
 	}
-	printf("Sent data, bye\n");
 
 error:
 	shutdown(sd, SHUT_RDWR);
@@ -184,7 +183,7 @@ void web_recv(int sd)
 	}
 
 	sin_if = stream_peek(client, ifname);
-	printf("Got client on ifname: %s\n", ifname);
+//	printf("Got client on ifname: %s\n", ifname);
 
 	respond(client, sin_if, len);
 	shutdown(client, SHUT_RDWR);
