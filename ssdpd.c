@@ -436,7 +436,6 @@ int main(int argc, char *argv[])
 		open_ssdp_socket(argv[i]);
 	open_web_socket(NULL);
 
-	sleep(1);
 	announce();
 	while (running) {
 		announce();
