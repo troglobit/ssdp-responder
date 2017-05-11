@@ -42,6 +42,7 @@
 typedef struct {
 	int   sd;
 	char *ifname;
+	void (*cb)(int);
 } ifsock_t;
 
 int      running = 1;
@@ -51,7 +52,15 @@ ifsock_t iflist[MAX_NUM_IFACES];
 in_addr_t graal;
 
 unsigned short in_cksum(unsigned short *addr, int len);
+static void ssdp_recv(int sd);
 
+void register_socket(int sd, char *ifname, void (*cb)(int sd))
+{
+	iflist[ifnum].sd = sd;
+	iflist[ifnum].ifname = ifname;
+	iflist[ifnum].cb = cb;
+	ifnum++;
+}
 
 static void open_socket(char *ifname)
 {
@@ -93,9 +102,7 @@ static void open_socket(char *ifname)
 	if (rc < 0)
 		err(1, "Cannot disable MC loop");
 
-	iflist[ifnum].sd = sd;
-	iflist[ifnum].ifname = ifname;
-	ifnum++;
+	register_socket(sd, ifname, ssdp_recv);
 }
 
 static int close_socket(void)
@@ -149,14 +156,15 @@ static void send_message(int sd)
 	}
 }
 
-static void recv_message(int ifi)
+static void ssdp_recv(int sd)
 {
 	ssize_t len;
+	struct sockaddr sa;
+	socklen_t salen;
 	unsigned char buf[MAX_PKT_SIZE];
 
 	memset(buf, 0, sizeof(buf));
-
-	len = recv(iflist[ifi].sd, buf, sizeof(buf), MSG_DONTWAIT);
+	len = recvfrom(sd, buf, sizeof(buf), MSG_DONTWAIT, &sa, &salen);
 	if (len > 0) {
 		struct ip *ip;
 		struct udphdr *uh;
@@ -206,7 +214,7 @@ again:
 
 		for (i = 0; num > 0 && i < ifnum; i++) {
 			if (pfd[i].revents & POLLIN) {
-				recv_message(i);
+				iflist[i].cb(iflist[i].sd);
 				num--;
 			}
 		}
