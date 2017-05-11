@@ -127,14 +127,14 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 			goto error;
 		}
 
-		if (strncmp(reqline[1], "/\0", 2) == 0)
-			reqline[1] = "/index.html";
+//		if (strncmp(reqline[1], "/\0", 2) == 0)
+//			reqline[1] = "/index.html";
 
 		strcpy(path, root);
 		strcpy(&path[strlen(root)], reqline[1]);
 //		printf("file: %s\n", path);
 
-		if (!strstr(path, "description.xml")) {
+		if (!strstr(path, LOCATION_DESC)) {
 //		if ((fd = open(path, O_RDONLY)) < 0) {
 			if (write(sd, "HTTP/1.0 404 Not Found\r\n", 24) < 0)
 				warn("Failed returning status 404 to client");

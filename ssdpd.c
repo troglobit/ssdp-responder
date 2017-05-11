@@ -170,14 +170,14 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 static void compose_notify(char *type, char *buf, size_t len)
 {
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
-		 "Host: 239.255.255.250:1900\r\n"
+		 "Host: %s:%d\r\n"
 		 "Cache-Control: %s\r\n"
 		 "Location: http://%s:%d/%s\r\n"
 		 "NT: %s%s\r\n"
 		 "NTS: ssdp:alive\r\n"
 		 "Server: %s\r\n"
 		 "USN: uuid:%s%s%s\r\n"
-		 "\r\n", CACHING,
+		 "\r\n", MC_SSDP_GROUP, MC_SSDP_PORT, CACHING,
 		 host, LOCATION_PORT, LOCATION_DESC,
 		 type ? "" : "uuid:", type ? type : uuid,
 		 SERVER_STRING,
@@ -206,11 +206,11 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 
 	memset(buf, 0, sizeof(buf));
 	uh = (struct udphdr *)buf;
-	uh->uh_sport = htons(1900);
+	uh->uh_sport = htons(MC_SSDP_PORT);
 	if (sa)
 		uh->uh_dport = ((struct sockaddr_in *)sa)->sin_port;
 	else
-		uh->uh_dport = htons(1900);
+		uh->uh_dport = htons(MC_SSDP_PORT);
 
 	getifaddr(sd, host, sizeof(host));
 
@@ -305,7 +305,7 @@ static void ssdp_recv(int sd)
 			return;
 
 		uh = (struct udphdr *)(buf + (ip->ip_hl << 2));
-		if (uh->uh_dport != htons(1900))
+		if (uh->uh_dport != htons(MC_SSDP_PORT))
 			return;
 
 		http = (char *)(uh + sizeof(struct udphdr));
