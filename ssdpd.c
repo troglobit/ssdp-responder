@@ -62,7 +62,7 @@ void register_socket(int sd, char *ifname, void (*cb)(int sd))
 	ifnum++;
 }
 
-static void open_socket(char *ifname)
+void open_ssdp_socket(char *ifname)
 {
 	char loop;
 	int sd, val, rc;
@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
 	signal_init();
 
 	for (i = optind; i < argc; i++)
-		open_socket(argv[i]);
+		open_ssdp_socket(argv[i]);
 
 	while (running) {
 		announce();
