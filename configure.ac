@@ -1,4 +1,4 @@
-AC_INIT([ssdp-responder],[0.1],[https://github.com/wkz/ssdp-responder/issues])
+AC_INIT([ssdp-responder],[1.0],[https://github.com/wkz/ssdp-responder/issues])
 AM_INIT_AUTOMAKE([1.11 foreign])
 
 AC_CONFIG_SRCDIR([ssdpd.c])
