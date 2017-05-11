@@ -214,9 +214,9 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 
 	getifaddr(sd, host, sizeof(host));
 
+	/* RFC1123 date, as specified in RFC2616 */
 	now = time(NULL);
-	snprintf(date, sizeof(date), "%s", ctime(&now));
-	date[strlen(date) - 1] = 0;
+	strftime(date, sizeof(date), "%a, %d %b %Y %T %Z", gmtime(&now));
 
 	gethostname(hostname, sizeof(hostname));
 
