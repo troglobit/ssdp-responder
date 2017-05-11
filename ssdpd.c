@@ -229,7 +229,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 			 "Location: http://%s:%d/%s\r\n"
 			 "Server: %s\r\n"
 			 "ST: upnp:rootdevice\r\n"
-			 "USN: uuid:%s\r\n"
+			 "USN: uuid:%s::upnp:rootdevice\r\n"
 			 "\r\n", CACHING, date,
 			 host, LOCATION_PORT, LOCATION_DESC,
 			 SERVER_STRING, uuid);
