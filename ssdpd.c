@@ -258,6 +258,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 		if (num < 0)
 			warn("Failed sending SSDP message");
 
+#if 0
 		compose_notify("urn:schemas-upnp-org:device:Basic:1", http, sizeof(buf) - sizeof(*uh));
 		uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
 		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
@@ -271,6 +272,15 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
 		if (num < 0)
 			warn("Failed sending SSDP message");
+
+#else
+		compose_notify("urn:schemas-upnp-org:device:InternetGatewayDevice:1", http, sizeof(buf) - sizeof(*uh));
+		uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
+		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
+		if (num < 0)
+			warn("Failed sending SSDP message");
+#endif
 	}
 }
 
