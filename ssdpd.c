@@ -51,6 +51,9 @@ int      running = 1;
 size_t   ifnum = 0;
 ifsock_t iflist[MAX_NUM_IFACES];
 
+char host[NI_MAXHOST] = "1.2.3.4";
+char hostname[64];
+
 char uuid[42];
 in_addr_t graal;
 
@@ -167,14 +170,36 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
+static void compose_notify(char *type, char *buf, size_t len)
+{
+	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
+		 "Host: 239.255.255.250:1900\r\n"
+		 "Server: WeOS 5.0, UPnP/1.1, %s/1.0\r\n"
+		 "Cache-Control: max-age=1800\r\n"
+		 "Location: http://%s:5000/description.xml\r\n"
+		 "NT: %s%s\r\n"
+		 "NTS: ssdp:alive\r\n"
+		 "USN: uuid:%s%s%s\r\n"
+		 "\r\n", "corazon", host,
+		 type ? "" : "uuid:", type ? type : uuid,
+		 uuid,
+		 type ? "::" : "", type ? type : "");
+}
+
+size_t pktlen(unsigned char *buf)
+{
+	size_t hdr = sizeof(struct udphdr);
+
+	return strlen((char *)buf + hdr) + hdr;
+}
+
 static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 {
-	size_t i;
+	size_t i, note = 0;
+	ssize_t num;
 	time_t now;
 	char *http;
 	char date[42];
-	char host[NI_MAXHOST] = "1.2.3.4";
-	char hostname[64];
 	unsigned char buf[MAX_PKT_SIZE];
 	struct udphdr *uh;
 	struct sockaddr dest;
@@ -201,36 +226,49 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 		snprintf(http, sizeof(buf) - sizeof(*uh), "HTTP/1.1 200 OK\r\n"
 			 "Server: WeOS 5.0, UPnP/1.1, %s/1.0\r\n"
 			 "Date: %s\r\n"
-			 "Location: http://%s:1900/description.xml\r\n"
+			 "Location: http://%s:5000/description.xml\r\n"
 			 "ST: upnp:rootdevice\r\n"
 			 "EXT: \r\n"
 			 "USN: uuid:%s\r\n"
-			 "Cache-Control: max-age=3600\r\n"
-			 "\r\n", hostname, date, host, uuid);
+			 "Cache-Control: max-age=1800\r\n"
+			 "\r\n", "corazon", date, host, uuid);
 	else
-		snprintf(http, sizeof(buf) - sizeof(*uh), "NOTIFY * HTTP/1.1\r\n"
-			 "Host: 239.255.255.250:1900\r\n"
-			 "Server: WeOS 5.0, UPnP/1.1, %s/1.0\r\n"
-			 "Cache-Control: max-age=3600\r\n"
-			 "Location: http://%s:1900/description.xml\r\n"
-			 "NT: uuid:%s\r\n"
-			 "NTS: ssdp:alive\r\n"
-			 "USN: uuid:%s\r\n"
-			 "\r\n", hostname, host, uuid, uuid);
+		compose_notify(NULL, http, sizeof(buf) - sizeof(*uh));
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
 	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
 
 	if (!sa) {
+		note = 1;
 		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP);
 		sa = &dest;
 		salen = sizeof(dest);
 	}
 
-	for (i = 0; i < ifnum; i++) {
-		ssize_t num;
+//	printf("Sending %s ...\n", !note ? "reply" : "notify");
+	num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
+	if (num < 0)
+		warn("Failed sending SSDP message");
 
-		num = sendto(sd, buf, sizeof(buf), 0, sa, salen);
+	if (note) {
+		compose_notify("upnp:rootdevice", http, sizeof(buf) - sizeof(*uh));
+		uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
+		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
+		if (num < 0)
+			warn("Failed sending SSDP message");
+
+		compose_notify("urn:schemas-upnp-org:device:Basic:1", http, sizeof(buf) - sizeof(*uh));
+		uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
+		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
+		if (num < 0)
+			warn("Failed sending SSDP message");
+
+		compose_notify("urn:schemas-upnp-org:service:MyService0:1", http, sizeof(buf) - sizeof(*uh));
+		uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
+		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
 		if (num < 0)
 			warn("Failed sending SSDP message");
 	}
@@ -261,8 +299,13 @@ static void ssdp_recv(int sd)
 
 		http = (char *)(uh + sizeof(struct udphdr));
 		http = (char *)(buf + (ip->ip_hl << 2) + sizeof(struct udphdr));
-		if (strstr(http, "M-SEARCH *"))
+		if (strstr(http, "M-SEARCH *")) {
+			struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
+
+			sin->sin_port = uh->uh_sport;
+//			printf("Got M-SEARCH from %s port %d\n", inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
 			send_message(sd, &sa, salen);
+		}
 	}
 }
 
@@ -365,12 +408,15 @@ int main(int argc, char *argv[])
 
 	signal_init();
 
-	snprintf(uuid, sizeof(uuid), "%8x-%8x-%8x-%8x", rand(), rand(), rand(), rand());
+//	snprintf(uuid, sizeof(uuid), "%8x-%4x-%4x-%12x", rand(), rand(), rand(), rand());
+	snprintf(uuid, sizeof(uuid), "1e81a192-1aa2-4b42-a36f-e141819faf3d");
 
 	for (i = optind; i < argc; i++)
 		open_ssdp_socket(argv[i]);
 	open_web_socket(NULL);
 
+	sleep(1);
+	announce();
 	while (running) {
 		announce();
 		wait_message(interval);

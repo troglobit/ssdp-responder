@@ -153,6 +153,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 		gethostname(hostname, sizeof(hostname));
 
+//		printf("Sending XML reply ...\n");
 		send(sd, "HTTP/1.0 200 OK\r\n\r\n", 19, 0);
 		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, inet_ntoa(sin->sin_addr));
 		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
@@ -203,7 +204,7 @@ void open_web_socket(char *ifname)
 	sa.sa_family = AF_INET;
 	sin = (struct sockaddr_in *)&sa;
 	sin->sin_addr.s_addr = htonl(INADDR_ANY);
-	sin->sin_port = htons(1900);
+	sin->sin_port = htons(5000);
 
 	sd = socket(sa.sa_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (sd == -1)
