@@ -99,7 +99,7 @@ void open_ssdp_socket(char *ifname)
         if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)))
 		err(1, "Failed joining group %s", MC_SSDP_GROUP);
 
-	val = 1;
+	val = 2;		/* Default 2, but should be configurable */
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
 	if (rc < 0)
 		err(1, "Cannot set TTL");
