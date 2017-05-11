@@ -20,6 +20,8 @@
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 #include <poll.h>
 #include <stdio.h>
 #include <signal.h>
@@ -117,6 +119,46 @@ static int close_socket(void)
 	return ret;
 }
 
+static void getifaddr(int sd, char *host, size_t len)
+{
+	size_t i;
+	char *ifname = NULL;;
+	struct ifaddrs *ifaddrs, *ifa;
+
+	if (getifaddrs(&ifaddrs) < 0)
+		err(1, "Failed getifaddrs()");
+
+	for (i = 0; i < ifnum; i++) {
+		if (iflist[i].sd != sd)
+			continue;
+
+		ifname = iflist[i].ifname;
+	}
+
+	if (!ifname)
+		errx(1, "Cannot find a matching interface for socket %d", sd);
+
+	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
+		int s;
+
+		if (!ifa->ifa_addr)
+			continue;
+
+		if (ifa->ifa_addr->sa_family != AF_INET)
+			continue;
+
+		if (strcmp(ifa->ifa_name, ifname))
+			continue;
+
+		s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
+				host, len, NULL, 0, NI_NUMERICHOST);
+		if (s)
+			errx(1, "Failed getnameinfo(): %s", gai_strerror(s));
+		break;
+	}
+	freeifaddrs(ifaddrs);
+}
+
 static void compose_addr(struct sockaddr_in *sin, char *group)
 {
 	memset(sin, 0, sizeof(*sin));
@@ -124,36 +166,69 @@ static void compose_addr(struct sockaddr_in *sin, char *group)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
-static void send_message(int sd)
+static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 {
 	size_t i;
+	time_t now;
 	char *http;
+	char date[42];
+	char host[NI_MAXHOST] = "1.2.3.4";
 	unsigned char buf[MAX_PKT_SIZE];
 	struct udphdr *uh;
 	struct sockaddr dest;
+	struct sockaddr_in *sin;
 
 	memset(buf, 0, sizeof(buf));
 	uh = (struct udphdr *)buf;
-	uh->uh_sport = htons(0);	/* XXX? */
-	uh->uh_dport = htons(1900);
-	uh->uh_ulen = htons(50);	/* XXX: Fixme, payload + udphdr */
-	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+	uh->uh_sport = htons(1900);
+	if (sa)
+		uh->uh_dport = ((struct sockaddr_in *)sa)->sin_port;
+	else
+		uh->uh_dport = htons(1900);
 
-	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP);
+	getifaddr(sd, host, sizeof(host));
+
+	now = time(NULL);
+	snprintf(date, sizeof(date), "%s", ctime(&now));
+	date[strlen(date) - 1] = 0;
 
 	http = (char *)(buf + sizeof(*uh));
-	snprintf(http, sizeof(buf) - sizeof(*uh), "NOTIFY * HTTP/1.1\r\n"
-		"Host: 239.255.255.250:1900\r\n"
-		"Server: Hej 1.0, UPnP/1.1, hostname/1.0\r\n"
-		"Location: http://1.2.3.4/description.xml\r\n"
-		"\r\n");
+	if (sa)
+		snprintf(http, sizeof(buf) - sizeof(*uh), "HTTP/1.1 200 OK\r\n"
+			 "Server: WeOS 5.0, UPnP/1.1, corazon/1.0\r\n"
+			 "Date: %s\r\n"
+			 "Location: http://%s:1900/description.xml\r\n"
+			 "ST: upnp:rootdevice\r\n"
+			 "EXT: \r\n"
+			 "USN: uuid:%s\r\n"
+			 "Cache-Control: max-age=3600\r\n"
+			 "\r\n", date, host, uuid);
+	else
+		snprintf(http, sizeof(buf) - sizeof(*uh), "NOTIFY * HTTP/1.1\r\n"
+			 "Host: 239.255.255.250:1900\r\n"
+			 "Server: WeOS 5.0, UPnP/1.1, corazon/1.0\r\n"
+			 "Cache-Control: max-age=3600\r\n"
+			 "Location: http://%s:1900/description.xml\r\n"
+			 "NT: uuid:%s\r\n"
+			 "NTS: ssdp:alive\r\n"
+			 "USN: uuid:%s\r\n"
+			 "\r\n", host, uuid, uuid);
+
+	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
+	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+
+	if (!sa) {
+		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP);
+		sa = &dest;
+		salen = sizeof(dest);
+	}
 
 	for (i = 0; i < ifnum; i++) {
 		ssize_t num;
 
-		num = sendto(sd, buf, sizeof(buf), 0, &dest, sizeof(dest));
+		num = sendto(sd, buf, sizeof(buf), 0, sa, salen);
 		if (num < 0)
-			err(1, "Failed sending SSDP message");
+			warn("Failed sending SSDP message");
 	}
 }
 
@@ -181,10 +256,9 @@ static void ssdp_recv(int sd)
 			return;
 
 		http = (char *)(uh + sizeof(struct udphdr));
-		if (strstr(http, "M-SEARCH *")) {
-			printf("We got signal\n");
-			send_message(iflist[ifi].sd);
-		}
+		http = (char *)(buf + (ip->ip_hl << 2) + sizeof(struct udphdr));
+		if (strstr(http, "M-SEARCH *"))
+			send_message(sd, &sa, salen);
 	}
 }
 
@@ -226,8 +300,12 @@ static void announce(void)
 {
 	size_t i;
 
-	for (i = 0; i < ifnum; i++)
-		send_message(iflist[i].sd);
+	for (i = 0; i < ifnum; i++) {
+		if (!iflist[i].ifname)
+			continue;
+
+		send_message(iflist[i].sd, NULL, 0);
+	}
 }
 
 static void exit_handler(int signo)
