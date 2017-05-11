@@ -48,7 +48,6 @@ const char *xml =
 	"   <major>1</major>\r\n"
 	"   <minor>0</minor>\r\n"
 	" </specVersion>\r\n"
-	"\r\n"
 	" <device>\r\n"
 	"  <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>\r\n"
 	"  <friendlyName>%s</friendlyName>\r\n"
@@ -60,9 +59,8 @@ const char *xml =
 	"  <modelURL>http://www.westermo.com/</modelURL>\r\n"
 	"  <serialNumber>0000001</serialNumber>\r\n"
 	"  <UDN>uuid:%s</UDN>\r\n"
-	"\r\n"
+	"  <UPC></UPC>\r\n"
 	"  <presentationURL>http://%s</presentationURL>\r\n"
-	"\r\n"
 	" </device>\r\n"
 	"</root>\r\n";
 
@@ -122,7 +120,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		reqline[1] = strtok(NULL, " \t");
 		reqline[2] = strtok(NULL, " \t\n");
 		if (strncmp(reqline[2], "HTTP/1.0", 8) != 0 && strncmp(reqline[2], "HTTP/1.1", 8) != 0) {
-			if (write(sd, "HTTP/1.0 400 Bad Request\r\n", 26) < 0)
+			if (write(sd, "HTTP/1.1 400 Bad Request\r\n", 26) < 0)
 				warn("Failed returning status 400 to client");
 			goto error;
 		}
@@ -136,7 +134,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 		if (!strstr(path, LOCATION_DESC)) {
 //		if ((fd = open(path, O_RDONLY)) < 0) {
-			if (write(sd, "HTTP/1.0 404 Not Found\r\n", 24) < 0)
+			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
 				warn("Failed returning status 404 to client");
 			goto error;
 		}
@@ -144,7 +142,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		gethostname(hostname, sizeof(hostname));
 
 //		printf("Sending XML reply ...\n");
-		send(sd, "HTTP/1.0 200 OK\r\n\r\n", 19, 0);
+		send(sd, "HTTP/1.1 200 OK\r\n\r\n", 19, 0);
 		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, uuid, inet_ntoa(sin->sin_addr));
 		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
 			warn("Failed sending file to client");
