@@ -54,6 +54,7 @@ ifsock_t iflist[MAX_NUM_IFACES];
 char uuid[42];
 in_addr_t graal;
 
+void open_web_socket(char *ifname);
 unsigned short in_cksum(unsigned short *addr, int len);
 static void ssdp_recv(int sd);
 
@@ -365,6 +366,7 @@ int main(int argc, char *argv[])
 
 	for (i = optind; i < argc; i++)
 		open_ssdp_socket(argv[i]);
+	open_web_socket(NULL);
 
 	while (running) {
 		announce();
