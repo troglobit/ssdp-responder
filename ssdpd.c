@@ -174,6 +174,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 	char *http;
 	char date[42];
 	char host[NI_MAXHOST] = "1.2.3.4";
+	char hostname[64];
 	unsigned char buf[MAX_PKT_SIZE];
 	struct udphdr *uh;
 	struct sockaddr dest;
@@ -193,27 +194,29 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 	snprintf(date, sizeof(date), "%s", ctime(&now));
 	date[strlen(date) - 1] = 0;
 
+	gethostname(hostname, sizeof(hostname));
+
 	http = (char *)(buf + sizeof(*uh));
 	if (sa)
 		snprintf(http, sizeof(buf) - sizeof(*uh), "HTTP/1.1 200 OK\r\n"
-			 "Server: WeOS 5.0, UPnP/1.1, corazon/1.0\r\n"
+			 "Server: WeOS 5.0, UPnP/1.1, %s/1.0\r\n"
 			 "Date: %s\r\n"
 			 "Location: http://%s:1900/description.xml\r\n"
 			 "ST: upnp:rootdevice\r\n"
 			 "EXT: \r\n"
 			 "USN: uuid:%s\r\n"
 			 "Cache-Control: max-age=3600\r\n"
-			 "\r\n", date, host, uuid);
+			 "\r\n", hostname, date, host, uuid);
 	else
 		snprintf(http, sizeof(buf) - sizeof(*uh), "NOTIFY * HTTP/1.1\r\n"
 			 "Host: 239.255.255.250:1900\r\n"
-			 "Server: WeOS 5.0, UPnP/1.1, corazon/1.0\r\n"
+			 "Server: WeOS 5.0, UPnP/1.1, %s/1.0\r\n"
 			 "Cache-Control: max-age=3600\r\n"
 			 "Location: http://%s:1900/description.xml\r\n"
 			 "NT: uuid:%s\r\n"
 			 "NTS: ssdp:alive\r\n"
 			 "USN: uuid:%s\r\n"
-			 "\r\n", host, uuid, uuid);
+			 "\r\n", hostname, host, uuid, uuid);
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
 	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));

@@ -50,7 +50,7 @@ const char *xml =
 	"\r\n"
 	" <device>\r\n"
 	"  <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>\r\n"
-	"  <friendlyName>corazon-c0-ff-ee</friendlyName>\r\n"
+	"  <friendlyName>%s</friendlyName>\r\n"
 	"  <manufacturer>Westermo</manufacturer>\r\n"
 	"  <manufacturerURL>http://www.westermo.com/</manufacturerURL>\r\n"
 	"  <modelDescription>RedFox RFIR</modelDescription>\r\n"
@@ -115,6 +115,7 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname)
 
 void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 {
+	char hostname[64];
 	char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
 	int rcvd, fd, bytes_read;
 
@@ -150,8 +151,10 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 			goto error;
 		}
 
+		gethostname(hostname, sizeof(hostname));
+
 		send(sd, "HTTP/1.0 200 OK\r\n\r\n", 19, 0);
-		snprintf(data_to_send, sizeof(data_to_send), xml, inet_ntoa(sin->sin_addr)); //"192.168.1.124");
+		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, inet_ntoa(sin->sin_addr));
 		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
 			warn("Failed sending file to client");
 
