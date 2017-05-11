@@ -36,10 +36,7 @@
 #include <netinet/udp.h>
 #include <sys/socket.h>
 
-#define NOTIFY_INTERVAL      30
-#define MAX_NUM_IFACES       100
-#define MAX_PKT_SIZE         512
-#define MC_SSDP_GROUP        "239.255.255.250"
+#include "ssdp.h"
 
 typedef struct {
 	int   sd;
@@ -174,14 +171,16 @@ static void compose_notify(char *type, char *buf, size_t len)
 {
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
 		 "Host: 239.255.255.250:1900\r\n"
-		 "Server: WeOS 5.0, UPnP/1.1, %s/1.0\r\n"
-		 "Cache-Control: max-age=1800\r\n"
-		 "Location: http://%s:5000/description.xml\r\n"
+		 "Cache-Control: %s\r\n"
+		 "Location: http://%s:%d/%s\r\n"
 		 "NT: %s%s\r\n"
 		 "NTS: ssdp:alive\r\n"
+		 "Server: %s\r\n"
 		 "USN: uuid:%s%s%s\r\n"
-		 "\r\n", "corazon", host,
+		 "\r\n", CACHING,
+		 host, LOCATION_PORT, LOCATION_DESC,
 		 type ? "" : "uuid:", type ? type : uuid,
+		 SERVER_STRING,
 		 uuid,
 		 type ? "::" : "", type ? type : "");
 }
@@ -224,14 +223,16 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 	http = (char *)(buf + sizeof(*uh));
 	if (sa)
 		snprintf(http, sizeof(buf) - sizeof(*uh), "HTTP/1.1 200 OK\r\n"
-			 "Server: WeOS 5.0, UPnP/1.1, %s/1.0\r\n"
+			 "Cache-Control: %s\r\n"
 			 "Date: %s\r\n"
-			 "Location: http://%s:5000/description.xml\r\n"
-			 "ST: upnp:rootdevice\r\n"
 			 "EXT: \r\n"
+			 "Location: http://%s:%d/%s\r\n"
+			 "Server: %s\r\n"
+			 "ST: upnp:rootdevice\r\n"
 			 "USN: uuid:%s\r\n"
-			 "Cache-Control: max-age=1800\r\n"
-			 "\r\n", "corazon", date, host, uuid);
+			 "\r\n", CACHING, date,
+			 host, LOCATION_PORT, LOCATION_DESC,
+			 SERVER_STRING, uuid);
 	else
 		compose_notify(NULL, http, sizeof(buf) - sizeof(*uh));
 

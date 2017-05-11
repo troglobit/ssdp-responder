@@ -31,7 +31,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define BYTES 1024
+#include "ssdp.h"
+
 #define ENABLE_SOCKOPT(sd, level, opt)					\
         do {								\
                 int val = 1;						\
@@ -204,7 +205,7 @@ void open_web_socket(char *ifname)
 	sa.sa_family = AF_INET;
 	sin = (struct sockaddr_in *)&sa;
 	sin->sin_addr.s_addr = htonl(INADDR_ANY);
-	sin->sin_port = htons(5000);
+	sin->sin_port = htons(LOCATION_PORT);
 
 	sd = socket(sa.sa_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (sd == -1)
