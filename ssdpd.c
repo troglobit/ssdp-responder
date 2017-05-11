@@ -225,7 +225,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 		snprintf(http, sizeof(buf) - sizeof(*uh), "HTTP/1.1 200 OK\r\n"
 			 "Cache-Control: %s\r\n"
 			 "Date: %s\r\n"
-			 "EXT: \r\n"
+			 "Ext: \r\n"
 			 "Location: http://%s:%d/%s\r\n"
 			 "Server: %s\r\n"
 			 "ST: upnp:rootdevice\r\n"
@@ -249,7 +249,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 //	printf("Sending %s ...\n", !note ? "reply" : "notify");
 	num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
 	if (num < 0)
-		warn("Failed sending SSDP message");
+		warn("Failed sending SSDP %s", !note ? "reply" : "notify");
 
 	if (note) {
 		compose_notify("upnp:rootdevice", http, sizeof(buf) - sizeof(*uh));
@@ -257,7 +257,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
 		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
 		if (num < 0)
-			warn("Failed sending SSDP message");
+			warn("Failed sending SSDP rootdevice notify");
 
 #if 0
 		compose_notify("urn:schemas-upnp-org:device:Basic:1", http, sizeof(buf) - sizeof(*uh));
@@ -280,7 +280,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
 		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
 		if (num < 0)
-			warn("Failed sending SSDP message");
+			warn("Failed sending SSDP IGD notify");
 #endif
 	}
 }
@@ -307,6 +307,11 @@ static void ssdp_recv(int sd)
 		uh = (struct udphdr *)(buf + (ip->ip_hl << 2));
 		if (uh->uh_dport != htons(MC_SSDP_PORT))
 			return;
+
+		if (sa.sa_family != AF_INET) {
+//			warnx("IPv6 not supported (yet)");
+			return;
+		}
 
 		http = (char *)(uh + sizeof(struct udphdr));
 		http = (char *)(buf + (ip->ip_hl << 2) + sizeof(struct udphdr));
