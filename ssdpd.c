@@ -59,6 +59,8 @@ ifsock_t iflist[MAX_NUM_IFACES];
 
 char host[NI_MAXHOST] = "1.2.3.4";
 char hostname[64];
+char *os = NULL, *ver = NULL;
+char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 
 char uuid[42];
 in_addr_t graal;
@@ -190,7 +192,7 @@ static void compose_notify(char *type, char *buf, size_t len)
 		 "\r\n", MC_SSDP_GROUP, MC_SSDP_PORT, CACHING,
 		 host, LOCATION_PORT, LOCATION_DESC,
 		 type ? "" : "uuid:", type ? type : uuid,
-		 SERVER_STRING,
+		 server_string,
 		 uuid,
 		 type ? "::" : "", type ? type : "");
 }
@@ -242,7 +244,7 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 			 "USN: uuid:%s::%s\r\n"
 			 "\r\n", CACHING, date,
 			 host, LOCATION_PORT, LOCATION_DESC,
-			 SERVER_STRING, type, uuid, type);
+			 server_string, type, uuid, type);
 	else
 		compose_notify(type, http, sizeof(buf) - sizeof(*uh));
 
@@ -383,12 +385,48 @@ static void announce(void)
 	}
 }
 
+static void lsb_init(void)
+{
+	FILE *fp;
+	char *ptr;
+	char line[80];
+	const char *file = "/etc/lsb-release";
+
+	fp = fopen(file, "r");
+	if (!fp) {
+	fallback:
+		logit(LOG_WARNING, "No %s found on system, using built-in server string.", file);
+		return;
+	}
+
+	while (fgets(line, sizeof(line), fp)) {
+		line[strlen(line) - 1] = 0;
+
+		ptr = strstr(line, "DISTRIB_ID");
+		if (ptr && (ptr = strchr(ptr, '=')))
+			os = strdup(++ptr);
+
+		ptr = strstr(line, "DISTRIB_RELEASE");
+		if (ptr && (ptr = strchr(ptr, '=')))
+			ver = strdup(++ptr);
+	}
+	fclose(fp);
+
+	if (os && ver)
+		snprintf(server_string, sizeof(server_string), "%s/%s UPnP/1.0 %s/%s",
+			 os, ver, PACKAGE_NAME, PACKAGE_VERSION);
+	else
+		goto fallback;
+
+	logit(LOG_DEBUG, "Server: %s", server_string);
+}
+
 /* https://en.wikipedia.org/wiki/Universally_unique_identifier */
 static void uuidgen(void)
 {
 	FILE *fp;
 	char buf[42];
-	char *file = _PATH_VARDB PACKAGE_NAME ".cache";
+	const char *file = _PATH_VARDB PACKAGE_NAME ".cache";
 
 	fp = fopen(file, "r");
 	if (!fp) {
@@ -414,7 +452,7 @@ static void uuidgen(void)
 			fclose(fp);
 			goto generate;
 		}
-		buf[strlen(buf)] = 0;
+		buf[strlen(buf) - 1] = 0;
 		fclose(fp);
 	}
 
@@ -495,6 +533,7 @@ int main(int argc, char *argv[])
         setlogmask(LOG_UPTO(log_level));
 
 	uuidgen();
+	lsb_init();
 
 	for (i = optind; i < argc; i++)
 		open_ssdp_socket(argv[i]);

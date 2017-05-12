@@ -11,7 +11,6 @@
 #define MC_SSDP_PORT         1900
 #define LOCATION_PORT        MC_SSDP_PORT
 #define LOCATION_DESC        "description.xml"
-#define SERVER_STRING        "WeOS/5.0 UPnP/1.0 ssdpd/1.0"
 
 #define logit(lvl, fmt, args...) syslog(lvl, fmt, ##args)
 
