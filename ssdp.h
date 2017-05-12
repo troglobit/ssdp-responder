@@ -12,6 +12,8 @@
 #define LOCATION_PORT        MC_SSDP_PORT
 #define LOCATION_DESC        "description.xml"
 
+#define SSDP_ST_ALL          "ssdp:all"
+
 #define logit(lvl, fmt, args...) syslog(lvl, fmt, ##args)
 
 extern int debug;

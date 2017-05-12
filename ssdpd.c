@@ -46,9 +46,13 @@ typedef struct {
 	void (*cb)(int);
 } ifsock_t;
 
+char uuid[42];
+
 static char *supported_types[] = {
+	SSDP_ST_ALL,
 	"upnp:rootdevice",
 	"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+	uuid,
 	NULL
 };
 
@@ -62,7 +66,6 @@ char hostname[64];
 char *os = NULL, *ver = NULL;
 char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 
-char uuid[42];
 in_addr_t graal;
 
 void open_web_socket(char *ifname);
@@ -179,22 +182,71 @@ static void compose_addr(struct sockaddr_in *sin, char *group, int port)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
+static void compose_response(char *type, char *buf, size_t len)
+{
+	char usn[256];
+	char date[42];
+	time_t now;
+
+	/* RFC1123 date, as specified in RFC2616 */
+	now = time(NULL);
+	strftime(date, sizeof(date), "%a, %d %b %Y %T %Z", gmtime(&now));
+
+	if (type) {
+		if (!strcmp(type, uuid))
+			type = NULL;
+		else
+			snprintf(usn, sizeof(usn), "%s::%s", uuid, type);
+	}
+
+	if (!type)
+		strncpy(usn, uuid, sizeof(usn));
+
+	snprintf(buf, len, "HTTP/1.1 200 OK\r\n"
+		 "Cache-Control: %s\r\n"
+		 "Date: %s\r\n"
+		 "Ext: \r\n"
+		 "Location: http://%s:%d/%s\r\n"
+		 "Server: %s\r\n"
+		 "ST: %s\r\n"
+		 "USN: %s\r\n"
+		 "\r\n", CACHING, date,
+		 host, LOCATION_PORT, LOCATION_DESC,
+		 server_string,
+		 type,
+		 usn);
+}
+
 static void compose_notify(char *type, char *buf, size_t len)
 {
+	char usn[256];
+
+	if (type) {
+		if (!strcmp(type, SSDP_ST_ALL))
+			type = NULL;
+		else
+			snprintf(usn, sizeof(usn), "%s::%s", uuid, type);
+	}
+
+	if (!type) {
+		type = usn;
+		strncpy(usn, uuid, sizeof(usn));
+	}
+
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
 		 "Host: %s:%d\r\n"
 		 "Cache-Control: %s\r\n"
 		 "Location: http://%s:%d/%s\r\n"
-		 "NT: %s%s\r\n"
+		 "NT: %s\r\n"
 		 "NTS: ssdp:alive\r\n"
 		 "Server: %s\r\n"
-		 "USN: uuid:%s%s%s\r\n"
-		 "\r\n", MC_SSDP_GROUP, MC_SSDP_PORT, CACHING,
+		 "USN: %s\r\n"
+		 "\r\n", MC_SSDP_GROUP, MC_SSDP_PORT,
+		 CACHING,
 		 host, LOCATION_PORT, LOCATION_DESC,
-		 type ? "" : "uuid:", type ? type : uuid,
+		 type,
 		 server_string,
-		 uuid,
-		 type ? "::" : "", type ? type : "");
+		 usn);
 }
 
 size_t pktlen(unsigned char *buf)
@@ -206,11 +258,9 @@ size_t pktlen(unsigned char *buf)
 
 static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t salen)
 {
-	size_t i, note = 0;
+	size_t i, len, note = 0;
 	ssize_t num;
-	time_t now;
 	char *http;
-	char date[42];
 	unsigned char buf[MAX_PKT_SIZE];
 	struct udphdr *uh;
 	struct sockaddr dest;
@@ -226,27 +276,17 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 
 	getifaddr(sd, host, sizeof(host));
 
-	/* RFC1123 date, as specified in RFC2616 */
-	now = time(NULL);
-	strftime(date, sizeof(date), "%a, %d %b %Y %T %Z", gmtime(&now));
-
 	gethostname(hostname, sizeof(hostname));
 
+	if (!strcmp(type, SSDP_ST_ALL))
+		type = NULL;
+
 	http = (char *)(buf + sizeof(*uh));
+	len = sizeof(buf) - sizeof(*uh);
 	if (sa)
-		snprintf(http, sizeof(buf) - sizeof(*uh), "HTTP/1.1 200 OK\r\n"
-			 "Cache-Control: %s\r\n"
-			 "Date: %s\r\n"
-			 "Ext: \r\n"
-			 "Location: http://%s:%d/%s\r\n"
-			 "Server: %s\r\n"
-			 "ST: %s\r\n"
-			 "USN: uuid:%s::%s\r\n"
-			 "\r\n", CACHING, date,
-			 host, LOCATION_PORT, LOCATION_DESC,
-			 server_string, type, uuid, type);
+		compose_response(type, http, len);
 	else
-		compose_notify(type, http, sizeof(buf) - sizeof(*uh));
+		compose_notify(type, http, len);
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
 	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
@@ -302,8 +342,8 @@ static void ssdp_recv(int sd)
 
 			type = strcasestr(http, "\r\nST:");
 			if (!type) {
-				logit(LOG_DEBUG, "No Search Type (ST:) found in M-SEARCH *, assuming rootdevice");
-				type = "upnp:rootdevice";
+				logit(LOG_DEBUG, "No Search Type (ST:) found in M-SEARCH *, assuming " SSDP_ST_ALL);
+				type = SSDP_ST_ALL;
 				send_message(sd, type, &sa, salen);
 				return;
 			}
@@ -379,9 +419,13 @@ static void announce(void)
 		if (!iflist[i].ifname)
 			continue;
 
-		send_message(iflist[i].sd, NULL, NULL, 0);
-		for (j = 0; supported_types[j]; j++)
+		for (j = 0; supported_types[j]; j++) {
+			/* UUID sent in SSDP_ST_ALL, first announce */
+			if (!strcmp(supported_types[j], uuid))
+				continue;
+
 			send_message(iflist[i].sd, supported_types[j], NULL, 0);
+		}
 	}
 }
 
@@ -435,7 +479,7 @@ static void uuidgen(void)
 			logit(LOG_WARNING, "Cannot create UUID cache, %s: %s", file, strerror(errno));
 
 	generate:
-		snprintf(buf, sizeof(buf), "%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
+		snprintf(buf, sizeof(buf), "uuid:%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
 			 rand() & 0xFFFFFFFF,
 			 rand() & 0xFFFF,
 			 (rand() & 0x0FFF) | 0x4000, /* M  4 MSB version => version 4 */
@@ -457,7 +501,7 @@ static void uuidgen(void)
 	}
 
 	strcpy(uuid, buf);
-	logit(LOG_DEBUG, "UUID: %s", uuid);
+	logit(LOG_DEBUG, "URN: %s", uuid);
 }
 static void exit_handler(int signo)
 {
