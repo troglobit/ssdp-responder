@@ -369,12 +369,14 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("\nUsage: %s [-i SEC] IFACE [IFACE ...]\n"
+	printf("Usage: %s [-dhv] [-i SEC] IFACE [IFACE ...]\n"
 	       "\n"
+	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    Announce interval, default %d sec\n"
+	       "    -v        Show program version\n"
 	       "\n"
-	       "Bug report address: %-40s\n\n", PACKAGE_NAME, NOTIFY_INTERVAL, PACKAGE_BUGREPORT);
+	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, PACKAGE_BUGREPORT);
 
 	return code;
 }
@@ -386,7 +388,7 @@ int main(int argc, char *argv[])
 	int log_opts = LOG_CONS | LOG_PID;
 	uint8_t interval = NOTIFY_INTERVAL;
 
-	while ((c = getopt(argc, argv, "dhi:")) != EOF) {
+	while ((c = getopt(argc, argv, "dhi:v")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -400,6 +402,10 @@ int main(int argc, char *argv[])
 			if (interval < 4 || interval > 180)
 				errx(1, "Invalid announcement interval [1,60]");
 			break;
+
+		case 'v':
+			puts(PACKAGE_VERSION);
+			return 0;
 
 		default:
 			break;
