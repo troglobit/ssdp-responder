@@ -16,6 +16,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
+#include <config.h>
 #include <err.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
@@ -51,8 +52,8 @@ const char *xml =
 	" <device>\r\n"
 	"  <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>\r\n"
 	"  <friendlyName>%s</friendlyName>\r\n"
-	"  <manufacturer>Westermo</manufacturer>\r\n"
-	"  <modelName>RFIR</modelName>\r\n"
+	"  <manufacturer>%s</manufacturer>\r\n"
+	"  <modelName>%s</modelName>\r\n"
 	"  <UDN>uuid:%s</UDN>\r\n"
 	"  <presentationURL>http://%s</presentationURL>\r\n"
 	" </device>\r\n"
@@ -132,7 +133,10 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 		logit(LOG_DEBUG, "Sending XML reply ...");
 		send(sd, "HTTP/1.1 200 OK\r\n\r\n", 19, 0);
-		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, uuid, inet_ntoa(sin->sin_addr));
+		snprintf(data_to_send, sizeof(data_to_send), xml, hostname,
+			 MANUFACTURER,
+			 MODEL,
+			 uuid, inet_ntoa(sin->sin_addr));
 		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
 			warn("Failed sending file to client");
 	}
