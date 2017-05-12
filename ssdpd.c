@@ -17,6 +17,7 @@
  */
 
 #include <config.h>
+#include <ctype.h>
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
@@ -43,6 +44,12 @@ typedef struct {
 	char *ifname;
 	void (*cb)(int);
 } ifsock_t;
+
+static char *supported_types[] = {
+	"upnp:rootdevice",
+	"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+	NULL
+};
 
 int      debug = 0;
 int      running = 1;
@@ -194,7 +201,7 @@ size_t pktlen(unsigned char *buf)
 	return strlen((char *)buf + hdr) + hdr;
 }
 
-static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
+static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t salen)
 {
 	size_t i, note = 0;
 	ssize_t num;
@@ -230,13 +237,13 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 			 "Ext: \r\n"
 			 "Location: http://%s:%d/%s\r\n"
 			 "Server: %s\r\n"
-			 "ST: upnp:rootdevice\r\n"
-			 "USN: uuid:%s::upnp:rootdevice\r\n"
+			 "ST: %s\r\n"
+			 "USN: uuid:%s::%s\r\n"
 			 "\r\n", CACHING, date,
 			 host, LOCATION_PORT, LOCATION_DESC,
-			 SERVER_STRING, uuid);
+			 SERVER_STRING, type, uuid, type);
 	else
-		compose_notify(NULL, http, sizeof(buf) - sizeof(*uh));
+		compose_notify(type, http, sizeof(buf) - sizeof(*uh));
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
 	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
@@ -251,23 +258,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 	logit(LOG_DEBUG, "Sending %s ...", !note ? "reply" : "notify");
 	num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
 	if (num < 0)
-		warn("Failed sending SSDP %s", !note ? "reply" : "notify");
-
-	if (note) {
-		compose_notify("upnp:rootdevice", http, sizeof(buf) - sizeof(*uh));
-		uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
-		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
-		if (num < 0)
-			warn("Failed sending SSDP rootdevice notify");
-
-		compose_notify("urn:schemas-upnp-org:device:InternetGatewayDevice:1", http, sizeof(buf) - sizeof(*uh));
-		uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-		uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
-		num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
-		if (num < 0)
-			warn("Failed sending SSDP IGD notify");
-	}
+		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s", !note ? "reply" : "notify", type);
 }
 
 static void ssdp_recv(int sd)
@@ -299,11 +290,44 @@ static void ssdp_recv(int sd)
 		http = (char *)(uh + sizeof(struct udphdr));
 		http = (char *)(buf + (ip->ip_hl << 2) + sizeof(struct udphdr));
 		if (strstr(http, "M-SEARCH *")) {
+			size_t i;
+			char *ptr, *type;
 			struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
+			/* Set source port as destination in our reply */
 			sin->sin_port = uh->uh_sport;
-			logit(LOG_DEBUG, "M-SEARCH from %s port %d", inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
-			send_message(sd, &sa, salen);
+
+			type = strcasestr(http, "\r\nST:");
+			if (!type) {
+				logit(LOG_DEBUG, "No Search Type (ST:) found in M-SEARCH *, assuming rootdevice");
+				type = "upnp:rootdevice";
+				send_message(sd, type, &sa, salen);
+				return;
+			}
+
+			type = strchr(type, ':');
+			if (!type)
+				return;
+			type++;
+			while (isspace(*type))
+				type++;
+
+			ptr = strstr(type, "\r\n");
+			if (!ptr)
+				return;
+			*ptr = 0;
+
+			for (i = 0; supported_types[i]; i++) {
+				if (!strcmp(supported_types[i], type)) {
+					logit(LOG_DEBUG, "M-SEARCH * ST: %s from %s port %d", type,
+					      inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
+					send_message(sd, type, &sa, salen);
+					return;
+				}
+			}
+
+			logit(LOG_DEBUG, "M-SEARCH * for unsupported ST: %s from %s", type,
+			      inet_ntoa(sin->sin_addr));
 		}
 	}
 }
@@ -347,10 +371,14 @@ static void announce(void)
 	size_t i;
 
 	for (i = 0; i < ifnum; i++) {
+		size_t j;
+
 		if (!iflist[i].ifname)
 			continue;
 
-		send_message(iflist[i].sd, NULL, 0);
+		send_message(iflist[i].sd, NULL, NULL, 0);
+		for (j = 0; supported_types[j]; j++)
+			send_message(iflist[i].sd, supported_types[j], NULL, 0);
 	}
 }
 
