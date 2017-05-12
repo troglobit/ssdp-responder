@@ -125,15 +125,11 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 			goto error;
 		}
 
-//		if (strncmp(reqline[1], "/\0", 2) == 0)
-//			reqline[1] = "/index.html";
-
 		strcpy(path, root);
 		strcpy(&path[strlen(root)], reqline[1]);
 //		printf("file: %s\n", path);
 
 		if (!strstr(path, LOCATION_DESC)) {
-//		if ((fd = open(path, O_RDONLY)) < 0) {
 			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
 				warn("Failed returning status 404 to client");
 			goto error;
@@ -146,14 +142,6 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, uuid, inet_ntoa(sin->sin_addr));
 		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
 			warn("Failed sending file to client");
-
-//		while ((bytes_read = read(fd, data_to_send, BYTES)) > 0) {
-//			printf("line: %s\n", data_to_send);
-//			if (write(sd, data_to_send, bytes_read) < 0) {
-//				warn("Failed sending file to client");
-//				break;
-//			}
-//		}
 	}
 
 error:
