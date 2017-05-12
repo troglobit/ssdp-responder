@@ -23,6 +23,7 @@
 #include <getopt.h>
 #include <ifaddrs.h>
 #include <netdb.h>
+#include <paths.h>
 #include <poll.h>
 #include <stdio.h>
 #include <signal.h>
@@ -382,6 +383,44 @@ static void announce(void)
 	}
 }
 
+/* https://en.wikipedia.org/wiki/Universally_unique_identifier */
+static void uuidgen(void)
+{
+	FILE *fp;
+	char buf[42];
+	char *file = _PATH_VARDB PACKAGE_NAME ".cache";
+
+	fp = fopen(file, "r");
+	if (!fp) {
+		fp = fopen(file, "w");
+		if (!fp)
+			logit(LOG_WARNING, "Cannot create UUID cache, %s: %s", file, strerror(errno));
+
+	generate:
+		snprintf(buf, sizeof(buf), "%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
+			 rand() & 0xFFFFFFFF,
+			 rand() & 0xFFFF,
+			 (rand() & 0x0FFF) | 0x4000, /* M  4 MSB version => version 4 */
+			 (rand() & 0x1FFF) | 0x8000, /* N: 3 MSB variant => variant 1 */
+			 rand() & 0xFFFFFF, rand() & 0xFFFFFF);
+
+		if (fp) {
+			logit(LOG_DEBUG, "Creating new UUID cache file, %s", file);
+			fprintf(fp, "%s\n", buf);
+			fclose(fp);
+		}
+	} else {
+		if (!fgets(buf, sizeof(buf), fp)) {
+			fclose(fp);
+			goto generate;
+		}
+		buf[strlen(buf)] = 0;
+		fclose(fp);
+	}
+
+	strcpy(uuid, buf);
+	logit(LOG_DEBUG, "UUID: %s", uuid);
+}
 static void exit_handler(int signo)
 {
 	running = 0;
@@ -455,14 +494,8 @@ int main(int argc, char *argv[])
         openlog(PACKAGE_NAME, log_opts, LOG_DAEMON);
         setlogmask(LOG_UPTO(log_level));
 
-	/* https://en.wikipedia.org/wiki/Universally_unique_identifier */
-	snprintf(uuid, sizeof(uuid), "%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
-		 rand() & 0xFFFFFFFF,
-		 rand() & 0xFFFF,
-		 (rand() & 0x0FFF) | 0x4000, /* M  4 MSB version => version 4 */
-		 (rand() & 0x1FFF) | 0x8000, /* N: 3 MSB variant => variant 1 */
-		 rand() & 0xFFFFFF, rand() & 0xFFFFFF);
-	logit(LOG_DEBUG, "UUID: %s", uuid);
+	uuidgen();
+
 	for (i = optind; i < argc; i++)
 		open_ssdp_socket(argv[i]);
 	open_web_socket(NULL);
