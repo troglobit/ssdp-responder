@@ -44,6 +44,7 @@ typedef struct {
 	void (*cb)(int);
 } ifsock_t;
 
+int      debug = 0;
 int      running = 1;
 size_t   ifnum = 0;
 ifsock_t iflist[MAX_NUM_IFACES];
@@ -247,7 +248,7 @@ static void send_message(int sd, struct sockaddr *sa, socklen_t salen)
 		salen = sizeof(dest);
 	}
 
-//	printf("Sending %s ...\n", !note ? "reply" : "notify");
+	logit(LOG_DEBUG, "Sending %s ...", !note ? "reply" : "notify");
 	num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
 	if (num < 0)
 		warn("Failed sending SSDP %s", !note ? "reply" : "notify");
@@ -301,7 +302,7 @@ static void ssdp_recv(int sd)
 			struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
 			sin->sin_port = uh->uh_sport;
-//			printf("Got M-SEARCH from %s port %d\n", inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
+			logit(LOG_DEBUG, "M-SEARCH from %s port %d", inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
 			send_message(sd, &sa, salen);
 		}
 	}
@@ -381,10 +382,16 @@ static int usage(int code)
 int main(int argc, char *argv[])
 {
 	int i, c;
+	int log_level = LOG_NOTICE;
+	int log_opts = LOG_CONS | LOG_PID;
 	uint8_t interval = NOTIFY_INTERVAL;
 
-	while ((c = getopt(argc, argv, "hi:")) != EOF) {
+	while ((c = getopt(argc, argv, "dhi:")) != EOF) {
 		switch (c) {
+		case 'd':
+			debug = 1;
+			break;
+
 		case 'h':
 			return usage(0);
 
@@ -406,6 +413,14 @@ int main(int argc, char *argv[])
 
 	signal_init();
 
+        if (debug) {
+		log_level = LOG_DEBUG;
+                log_opts |= LOG_PERROR;
+	}
+
+        openlog(PACKAGE_NAME, log_opts, LOG_DAEMON);
+        setlogmask(LOG_UPTO(log_level));
+
 	/* https://en.wikipedia.org/wiki/Universally_unique_identifier */
 	snprintf(uuid, sizeof(uuid), "%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
 		 rand() & 0xFFFFFFFF,
@@ -413,7 +428,7 @@ int main(int argc, char *argv[])
 		 (rand() & 0x0FFF) | 0x4000, /* M  4 MSB version => version 4 */
 		 (rand() & 0x1FFF) | 0x8000, /* N: 3 MSB variant => variant 1 */
 		 rand() & 0xFFFFFF, rand() & 0xFFFFFF);
-//	printf("UUID: %s\n", uuid);
+	logit(LOG_DEBUG, "UUID: %s", uuid);
 	for (i = optind; i < argc; i++)
 		open_ssdp_socket(argv[i]);
 	open_web_socket(NULL);
@@ -424,6 +439,7 @@ int main(int argc, char *argv[])
 		wait_message(interval);
 	}
 
+	closelog();
 	return close_socket();
 }
 

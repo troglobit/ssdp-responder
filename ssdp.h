@@ -1,4 +1,6 @@
 
+#include <syslog.h>
+
 #define BYTES 1024
 
 #define NOTIFY_INTERVAL      30
@@ -11,4 +13,8 @@
 #define LOCATION_DESC        "description.xml"
 #define SERVER_STRING        "WeOS/5.0 UPnP/1.0 ssdpd/1.0"
 
+#define logit(lvl, fmt, args...) syslog(lvl, fmt, ##args)
+
+extern int debug;
 extern char uuid[];
+

@@ -114,7 +114,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		goto error;
 	}
 
-//	printf("%s", mesg);
+	logit(LOG_DEBUG, "%s", mesg);
 	reqline[0] = strtok(mesg, " \t\n");
 	if (strncmp(reqline[0], "GET\0", 4) == 0) {
 		reqline[1] = strtok(NULL, " \t");
@@ -127,7 +127,6 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 		strcpy(path, root);
 		strcpy(&path[strlen(root)], reqline[1]);
-//		printf("file: %s\n", path);
 
 		if (!strstr(path, LOCATION_DESC)) {
 			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
@@ -137,7 +136,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 		gethostname(hostname, sizeof(hostname));
 
-//		printf("Sending XML reply ...\n");
+		logit(LOG_DEBUG, "Sending XML reply ...");
 		send(sd, "HTTP/1.1 200 OK\r\n\r\n", 19, 0);
 		snprintf(data_to_send, sizeof(data_to_send), xml, hostname, uuid, inet_ntoa(sin->sin_addr));
 		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
@@ -163,7 +162,6 @@ void web_recv(int sd)
 	}
 
 	sin_if = stream_peek(client, ifname);
-//	printf("Got client on ifname: %s\n", ifname);
 
 	respond(client, sin_if, len);
 	shutdown(client, SHUT_RDWR);
