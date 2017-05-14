@@ -694,6 +694,7 @@ int main(int argc, char *argv[])
 	uuidgen();
 	lsb_init();
 
+	strncpy(ctx.header.server_string, server_string, sizeof(ctx.header.server_string));
 //	for (i = optind; i < argc; i++)
 //		open_ssdp_socket(argv[i]);
 //	open_web_socket(NULL);

@@ -74,6 +74,7 @@ typedef struct lssdp_ctx {
         /* SSDP Standard Header Fields */
         char        search_target       [LSSDP_FIELD_LEN];  // Search Target
         char        unique_service_name [LSSDP_FIELD_LEN];  // Unique Service Name: MAC or User Name
+	char	    server_string       [2 * LSSDP_FIELD_LEN];
         struct {                                            // Location (optional):
             char    prefix              [LSSDP_FIELD_LEN];  // Protocal: "https://" or "http://"
             char    domain              [LSSDP_FIELD_LEN];  // if domain is empty, using Interface IP as default

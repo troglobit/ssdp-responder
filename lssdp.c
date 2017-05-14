@@ -492,7 +492,7 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
             "HOST:%s:%d\r\n"
             "CACHE-CONTROL:max-age=120\r\n"
             "LOCATION:%s%s%s\r\n"
-            "SERVER:OS/version product/version\r\n"
+            "SERVER:%s\n"
             "NT:%s\r\n"
             "NTS:ssdp:alive\r\n"
             "USN:%s\r\n"
@@ -504,6 +504,7 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
             lssdp->header.location.prefix,              // LOCATION
             strlen(domain) > 0 ? domain : interface->ip,
             lssdp->header.location.suffix,
+		 lssdp->header.server_string,
             lssdp->header.search_target,                // NT (Notify Type)
             lssdp->header.unique_service_name,          // USN
             lssdp->header.sm_id,                        // SM_ID    (addtional field)
