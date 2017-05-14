@@ -6,7 +6,7 @@
 #define NOTIFY_INTERVAL      30
 #define MAX_NUM_IFACES       100
 #define MAX_PKT_SIZE         512
-#define CACHING              "max-age=1800"
+#define CACHING              "max-age=120"
 #define MC_SSDP_GROUP        "239.255.255.250"
 #define MC_SSDP_PORT         1900
 #define LOCATION_PORT        MC_SSDP_PORT
