@@ -43,6 +43,7 @@
 #include <sys/socket.h>
 
 #include "ssdp.h"
+#include "lssdp.h"
 
 typedef struct {
 	int   sd;
@@ -59,6 +60,24 @@ static char *supported_types[] = {
 	uuid,
 	NULL
 };
+
+lssdp_ctx ctx = {
+	// .debug = true,           // debug
+	.port = 1900,
+	.neighbor_timeout = 15000,  // 15 seconds
+	.header = {
+		.search_target       = "ST_P2P",
+		.unique_service_name = "f835dd000001",
+		.sm_id               = "700000123",
+		.device_type         = "DEV_TYPE",
+		.location.suffix     = ":5678"
+	},
+
+	// callback
+	.neighbor_list_changed_callback     = NULL,
+	.network_interface_changed_callback = NULL,
+};
+
 
 int      debug = 0;
 int      running = 1;
@@ -428,7 +447,7 @@ static void ssdp_recv(int sd)
 	}
 }
 
-static void wait_message(uint8_t interval)
+static void wait_message(lssdp_ctx *ctx, uint8_t interval)
 {
 	size_t i;
 	int num = 1;
@@ -462,8 +481,9 @@ again:
 	}
 }
 
-static void announce(void)
+static void announce(lssdp_ctx *ctx)
 {
+#if 0
 	size_t i;
 
 	for (i = 0; i < ifnum; i++) {
@@ -481,6 +501,11 @@ static void announce(void)
 			send_message(iflist[i].sd, supported_types[j], NULL, 0);
 		}
 	}
+#else
+	lssdp_send_msearch(ctx);             // 2. send M-SEARCH
+	lssdp_send_notify(ctx);              // 3. send NOTIFY
+	lssdp_neighbor_check_timeout(ctx);   // 4. check neighbor timeout
+#endif
 }
 
 static void lsb_init(void)
@@ -584,6 +609,34 @@ static int usage(int code)
 	return code;
 }
 
+static void do_recv(int sd)
+{
+	if (ctx.sock == sd)
+		lssdp_socket_read(&ctx);
+}
+
+
+static int rebind_socket(lssdp_ctx *ctx)
+{
+    size_t i;
+    for (i = 0; i < ctx->interface_num; i++) {
+        printf("%zu. %-6s: %s\n",
+            i + 1,
+            ctx->interface[i].name,
+            ctx->interface[i].ip
+        );
+    }
+
+    close_socket();
+    if (lssdp_socket_create(ctx)) {
+	    logit(LOG_ERR, "SSDP create socket failed");
+	    return -1;
+    }
+    register_socket(ctx->sock, NULL, do_recv);
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	int i, c;
@@ -630,17 +683,25 @@ int main(int argc, char *argv[])
         openlog(PACKAGE_NAME, log_opts, LOG_DAEMON);
         setlogmask(LOG_UPTO(log_level));
 
+	/*
+	 * get network interface at first time,
+	 * network_interface_changed_callback will be invoke SSDP socket
+	 * will be created in callback function
+	 */
+	ctx.network_interface_changed_callback = rebind_socket;
+	lssdp_network_interface_update(&ctx);
+
 	uuidgen();
 	lsb_init();
 
-	for (i = optind; i < argc; i++)
-		open_ssdp_socket(argv[i]);
-	open_web_socket(NULL);
+//	for (i = optind; i < argc; i++)
+//		open_ssdp_socket(argv[i]);
+//	open_web_socket(NULL);
 
-	announce();
+//	announce(&ctx);
 	while (running) {
-		announce();
-		wait_message(interval);
+		announce(&ctx);
+		wait_message(&ctx, interval);
 	}
 
 	closelog();

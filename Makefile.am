@@ -1,5 +1,5 @@
 sbin_PROGRAMS  = ssdpd
-ssdpd_SOURCES  = ssdpd.c ssdp.h cksum.c web.c
+ssdpd_SOURCES  = ssdpd.c ssdp.h cksum.c web.c lssdp.c lssdp.h
 ssdpd_CFLAGS   = -W -Wall -Wextra -Wno-unused
 ssdpd_CPPFLAGS = -D_GNU_SOURCE
 EXTRA_DIST     = README.md LICENSE
