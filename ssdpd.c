@@ -203,15 +203,18 @@ static void compose_response(char *type, char *buf, size_t len)
 		strncpy(usn, uuid, sizeof(usn));
 
 	snprintf(buf, len, "HTTP/1.1 200 OK\r\n"
-		 "Cache-Control: %s\r\n"
-		 "Date: %s\r\n"
-		 "Ext: \r\n"
-		 "Location: http://%s:%d/%s\r\n"
-		 "Server: %s\r\n"
+		 "CACHE-CONTROL:%s\r\n"
+//		 "Date: %s\r\n"
+		 "DATE:\r\n"
+		 "EXT:\r\n"
+		 "LOCATION:%s:%d\r\n" ///%s\r\n"
+		 "SERVER:%s\r\n"
 		 "ST: %s\r\n"
 		 "USN: %s\r\n"
-		 "\r\n", CACHING, date,
-		 host, LOCATION_PORT, LOCATION_DESC,
+		 "\r\n",
+		 CACHING,
+//		 date,
+		 host, LOCATION_PORT, //LOCATION_DESC,
 		 server_string,
 		 type,
 		 usn);
@@ -234,18 +237,18 @@ static void compose_notify(char *type, char *buf, size_t len)
 	}
 
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
-		 "Host: %s:%d\r\n"
-		 "Cache-Control: %s\r\n"
-		 "Location: http://%s:%d/%s\r\n"
-		 "NT: %s\r\n"
-		 "NTS: ssdp:alive\r\n"
-		 "Server: %s\r\n"
-		 "USN: %s\r\n"
+		 "HOST:%s:%d\r\n"
+		 "CACHE-CONTROL:%s\r\n"
+		 "LOCATION:%s:%d\r\n" ///%s\r\n"
+		 "SERVER:%s\r\n"
+		 "NT:%s\r\n"
+		 "NTS:ssdp:alive\r\n"
+		 "USN:%s\r\n"
 		 "\r\n", MC_SSDP_GROUP, MC_SSDP_PORT,
 		 CACHING,
-		 host, LOCATION_PORT, LOCATION_DESC,
-		 type,
+		 host, LOCATION_PORT, //LOCATION_DESC,
 		 server_string,
+		 type,
 		 usn);
 }
 
@@ -275,7 +278,6 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 		uh->uh_dport = htons(MC_SSDP_PORT);
 
 	getifaddr(sd, host, sizeof(host));
-
 	gethostname(hostname, sizeof(hostname));
 
 	if (!strcmp(type, SSDP_ST_ALL))
