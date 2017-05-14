@@ -633,23 +633,36 @@ static void do_recv(int sd)
 
 static int rebind_socket(lssdp_ctx *ctx)
 {
-    size_t i;
-    for (i = 0; i < ctx->interface_num; i++) {
-        printf("%zu. %-6s: %s\n",
-            i + 1,
-            ctx->interface[i].name,
-            ctx->interface[i].ip
-        );
-    }
+	int pos = -1;
+	size_t i;
 
-    close_socket();
-    if (lssdp_socket_create(ctx)) {
-	    logit(LOG_ERR, "SSDP create socket failed");
-	    return -1;
-    }
-    register_socket(ctx->sock, NULL, do_recv);
+	for (i = 0; i < ctx->interface_num; i++) {
+		printf("%zu. %-6s: %s\n",
+		       i + 1,
+		       ctx->interface[i].name,
+		       ctx->interface[i].ip
+			);
+	}
 
-    return 0;
+	for (i = 0; i < ifnum; i++) {
+		if (iflist[i].sd != ctx->sock)
+			continue;
+
+		pos = (int)i;
+		break;
+	}
+
+	if (lssdp_socket_create(ctx)) {
+		logit(LOG_ERR, "SSDP create socket failed");
+		return -1;
+	}
+
+	if (-1 == pos)
+		register_socket(ctx->sock, NULL, do_recv);
+	else
+		iflist[pos].sd = ctx->sock;
+
+	return 0;
 }
 
 int main(int argc, char *argv[])
