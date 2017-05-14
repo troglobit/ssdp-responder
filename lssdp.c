@@ -496,8 +496,8 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
             "NT:%s\r\n"
             "NTS:ssdp:alive\r\n"
             "USN:%s\r\n"
-            "SM_ID:%s\r\n"
-            "DEV_TYPE:%s\r\n"
+//          "SM_ID:%s\r\n"
+//          "DEV_TYPE:%s\r\n"
             "\r\n",
             Global.HEADER_NOTIFY,                       // HEADER
             Global.ADDR_MULTICAST, lssdp->port,         // HOST
@@ -506,9 +506,9 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
             lssdp->header.location.suffix,
 		 lssdp->header.server_string,
             lssdp->header.search_target,                // NT (Notify Type)
-            lssdp->header.unique_service_name,          // USN
-            lssdp->header.sm_id,                        // SM_ID    (addtional field)
-            lssdp->header.device_type                   // DEV_TYPE (addtional field)
+            lssdp->header.unique_service_name          // USN
+//          lssdp->header.sm_id,                        // SM_ID    (addtional field)
+//          lssdp->header.device_type                   // DEV_TYPE (addtional field)
         );
 
         // send NOTIFY
