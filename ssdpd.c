@@ -70,7 +70,7 @@ lssdp_ctx ctx = {
 		.unique_service_name = "f835dd000001",
 		.sm_id               = "700000123",
 		.device_type         = "DEV_TYPE",
-		.location.suffix     = ":5678"
+		.location.suffix     = ":1900/description.xml"
 	},
 
 	// callback
@@ -698,7 +698,7 @@ int main(int argc, char *argv[])
 	strncpy(ctx.header.server_string, server_string, sizeof(ctx.header.server_string));
 //	for (i = optind; i < argc; i++)
 //		open_ssdp_socket(argv[i]);
-//	open_web_socket(NULL);
+	open_web_socket(NULL);
 
 //	announce(&ctx);
 	while (running) {
