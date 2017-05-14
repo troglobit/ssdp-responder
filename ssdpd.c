@@ -220,6 +220,20 @@ static void compose_response(char *type, char *buf, size_t len)
 		 usn);
 }
 
+static void compose_search(char *type, char *buf, size_t len)
+{
+	snprintf(buf, len, "M-SEARCH * HTTP/1.1\r\n"
+		 "HOST:%s:%d\r\n"
+		 "MAN:\"ssdp:discover\"\r\n"
+		 "MX:1\r\n"
+		 "ST:%s\r\n"
+		 "USER-AGENT:%s\r\n"
+		 "\r\n",
+		 MC_SSDP_GROUP, MC_SSDP_PORT,
+		 type,
+		 server_string);
+}
+
 static void compose_notify(char *type, char *buf, size_t len)
 {
 	char usn[256];
@@ -257,6 +271,39 @@ size_t pktlen(unsigned char *buf)
 	size_t hdr = sizeof(struct udphdr);
 
 	return strlen((char *)buf + hdr) + hdr;
+}
+
+static void send_search(int sd, char *type)
+{
+	size_t i, len, note = 0;
+	ssize_t num;
+	char *http;
+	unsigned char buf[MAX_PKT_SIZE];
+	struct udphdr *uh;
+	struct sockaddr dest;
+	struct sockaddr_in *sin;
+
+	memset(buf, 0, sizeof(buf));
+	uh = (struct udphdr *)buf;
+	uh->uh_sport = htons(MC_SSDP_PORT);
+	uh->uh_dport = htons(MC_SSDP_PORT);
+
+	getifaddr(sd, host, sizeof(host));
+	gethostname(hostname, sizeof(hostname));
+
+	http = (char *)(buf + sizeof(*uh));
+	len = sizeof(buf) - sizeof(*uh);
+	compose_search(type, http, len);
+
+	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
+	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+
+	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
+
+	logit(LOG_DEBUG, "Sending M-SEARCH ...");
+	num = sendto(sd, buf, pktlen(buf), 0, &dest, sizeof(struct sockaddr_in));
+	if (num < 0)
+		logit(LOG_WARNING, "Failed sending SSDP M-SEARCH");
 }
 
 static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t salen)
@@ -421,6 +468,7 @@ static void announce(void)
 		if (!iflist[i].ifname)
 			continue;
 
+		send_search(iflist[i].sd, "upnp:rootdevice");
 		for (j = 0; supported_types[j]; j++) {
 			/* UUID sent in SSDP_ST_ALL, first announce */
 			if (!strcmp(supported_types[j], uuid))
