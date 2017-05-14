@@ -62,7 +62,7 @@ static char *supported_types[] = {
 };
 
 lssdp_ctx ctx = {
-	// .debug = true,           // debug
+	.debug = true,           // debug
 	.port = 1900,
 	.neighbor_timeout = 15000,  // 15 seconds
 	.header = {
@@ -582,6 +582,21 @@ static void uuidgen(void)
 	strcpy(uuid, buf);
 	logit(LOG_DEBUG, "URN: %s", uuid);
 }
+
+void log_callback(const char *file, const char *tag, int level, int line, const char *func, const char *message)
+{
+    if (level == LSSDP_LOG_INFO)
+	    level = LOG_INFO;
+    else if (level == LSSDP_LOG_WARN)
+	    level = LOG_WARNING;
+    else if (level == LSSDP_LOG_ERROR)
+	    level = LOG_ERR;
+    else
+	    level = LOG_DEBUG;
+
+    logit(level, "%s: %s", tag, message);
+}
+
 static void exit_handler(int signo)
 {
 	running = 0;
@@ -690,6 +705,7 @@ int main(int argc, char *argv[])
 	 */
 	ctx.network_interface_changed_callback = rebind_socket;
 	lssdp_network_interface_update(&ctx);
+	lssdp_set_log_callback(log_callback);
 
 	uuidgen();
 	lsb_init();
