@@ -284,8 +284,8 @@ static void send_search(int sd, char *type)
 
 	memset(buf, 0, sizeof(buf));
 	uh = (struct udphdr *)buf;
-	uh->uh_sport = htons(MC_SSDP_PORT);
-	uh->uh_dport = htons(MC_SSDP_PORT);
+	uh->source = htons(MC_SSDP_PORT);
+	uh->dest   = htons(MC_SSDP_PORT);
 
 	getifaddr(sd, host, sizeof(host));
 	gethostname(hostname, sizeof(hostname));
@@ -294,8 +294,8 @@ static void send_search(int sd, char *type)
 	len = sizeof(buf) - sizeof(*uh);
 	compose_search(type, http, len);
 
-	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-	uh->uh_sum = 0;
+	uh->len   = htons(strlen(http) + sizeof(*uh));
+	uh->check = 0;
 
 	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 
@@ -317,11 +317,11 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 
 	memset(buf, 0, sizeof(buf));
 	uh = (struct udphdr *)buf;
-	uh->uh_sport = htons(MC_SSDP_PORT);
+	uh->source = htons(MC_SSDP_PORT);
 	if (sin)
-		uh->uh_dport = sin->sin_port;
+		uh->dest = sin->sin_port;
 	else
-		uh->uh_dport = htons(MC_SSDP_PORT);
+		uh->dest = htons(MC_SSDP_PORT);
 
 	getifaddr(sd, host, sizeof(host));
 	gethostname(hostname, sizeof(hostname));
@@ -336,8 +336,8 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 	else
 		compose_notify(type, http, len);
 
-	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-	uh->uh_sum = 0;
+	uh->len   = htons(strlen(http) + sizeof(*uh));
+	uh->check = 0;
 
 	if (!sin) {
 		note = 1;
@@ -371,7 +371,7 @@ static void ssdp_recv(int sd)
 			return;
 
 		uh = (struct udphdr *)(buf + (ip->ip_hl << 2));
-		if (uh->uh_dport != htons(MC_SSDP_PORT))
+		if (uh->dest != htons(MC_SSDP_PORT))
 			return;
 
 		if (sa.sa_family != AF_INET)
@@ -385,7 +385,7 @@ static void ssdp_recv(int sd)
 			struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
 			/* Set source port as destination in our reply */
-			sin->sin_port = uh->uh_sport;
+			sin->sin_port = uh->source;
 
 			type = strcasestr(http, "\r\nST:");
 			if (!type) {
