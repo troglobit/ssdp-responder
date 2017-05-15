@@ -377,7 +377,7 @@ int lssdp_socket_read(lssdp_ctx * lssdp) {
     if (strcmp(packet.st, lssdp->header.search_target) != 0) {
         // search target is not match
         if (lssdp->debug) {
-            lssdp_info("RECV <- %-8s   not match with %-14s %s\n", packet.method, lssdp->header.search_target, packet.location);
+		lssdp_info("RECV <- %-8s   %s no match with %-14s %s\n", packet.method, packet.st, lssdp->header.search_target, packet.location);
         }
         goto end;
     }
@@ -722,12 +722,12 @@ static int lssdp_packet_parser(const char * data, size_t data_len, lssdp_packet 
         lssdp_error("data should not be NULL\n");
         return -1;
     }
-
+#if 0
     if (data_len != strlen(data)) {
         lssdp_error("data_len (%zu) is not match to the data length (%zu)\n", data_len, strlen(data));
         return -1;
     }
-
+#endif
     if (packet == NULL) {
         lssdp_error("packet should not be NULL\n");
         return -1;
