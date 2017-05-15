@@ -1,3 +1,5 @@
+[![Travis Status][]][Travis]
+
 Prototype micro SSDP responder for networked devices.
 
 Usage
@@ -19,3 +21,6 @@ Origin
 
 Cloned from [mrdisc](https://github.com/troglobit/mrdisc) and whacked at
 with a bat until it replies to SSDP "MSEARCH *" messages used by Windows.
+
+[Travis]:        https://travis-ci.org/troglobit/ssdp-responder
+[Travis Status]: https://travis-ci.org/troglobit/ssdp-responder.png?branch=master
