@@ -10,7 +10,7 @@
 #define MC_SSDP_GROUP        "239.255.255.250"
 #define MC_SSDP_PORT         1900
 #define LOCATION_PORT        MC_SSDP_PORT
-#define LOCATION_DESC        "description.xml"
+#define LOCATION_DESC        "/description.xml"
 
 #define SSDP_ST_ALL          "ssdp:all"
 
