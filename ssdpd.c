@@ -467,7 +467,7 @@ static void announce(void)
 		if (!iflist[i].ifname)
 			continue;
 
-		send_search(iflist[i].sd, "upnp:rootdevice");
+//		send_search(iflist[i].sd, "upnp:rootdevice");
 		for (j = 0; supported_types[j]; j++) {
 			/* UUID sent in SSDP_ST_ALL, first announce */
 			if (!strcmp(supported_types[j], uuid))
