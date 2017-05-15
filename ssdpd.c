@@ -208,14 +208,14 @@ static void compose_response(char *type, char *buf, size_t len)
 		 "ST: %s\r\n"
 		 "EXT: \r\n"
 		 "USN: %s\r\n"
-		 "Cache-Control: %s\r\n"
+		 "Cache-Control: max-age=%d\r\n"
 		 "\r\n",
 		 server_string,
 		 date,
 		 host, LOCATION_PORT, LOCATION_DESC,
 		 type,
 		 usn,
-		 CACHING);
+		 CACHE_TIMEOUT);
 }
 
 static void compose_search(char *type, char *buf, size_t len)
@@ -251,18 +251,18 @@ static void compose_notify(char *type, char *buf, size_t len)
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
 		 "Host: %s:%d\r\n"
 		 "Server: %s\r\n"
-		 "Cache-Control: %s\r\n"
 		 "Location: http://%s:%d%s\r\n"
 		 "NT: %s\r\n"
 		 "NTS: ssdp:alive\r\n"
 		 "USN: %s\r\n"
+		 "Cache-Control: max-age=%d\r\n"
 		 "\r\n",
 		 MC_SSDP_GROUP, MC_SSDP_PORT,
 		 server_string,
-		 CACHING,
 		 host, LOCATION_PORT, LOCATION_DESC,
 		 type,
-		 usn);
+		 usn,
+		 CACHE_TIMEOUT);
 }
 
 size_t pktlen(unsigned char *buf)
@@ -572,7 +572,7 @@ static int usage(int code)
 	       "\n"
 	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
-	       "    -i SEC    Announce interval, default %d sec\n"
+	       "    -i SEC    SSDP notify interval, default %d sec\n"
 	       "    -v        Show program version\n"
 	       "\n"
 	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, PACKAGE_BUGREPORT);
@@ -585,7 +585,7 @@ int main(int argc, char *argv[])
 	int i, c;
 	int log_level = LOG_NOTICE;
 	int log_opts = LOG_CONS | LOG_PID;
-	uint8_t interval = NOTIFY_INTERVAL;
+	int interval = NOTIFY_INTERVAL;
 
 	while ((c = getopt(argc, argv, "dhi:v")) != EOF) {
 		switch (c) {
@@ -597,9 +597,9 @@ int main(int argc, char *argv[])
 			return usage(0);
 
 		case 'i':
-			interval = (uint8_t)atoi(optarg);
-			if (interval < 4 || interval > 180)
-				errx(1, "Invalid announcement interval [1,60]");
+			interval = atoi(optarg);
+			if (interval < 30)
+				errx(1, "Too low announcement interval.");
 			break;
 
 		case 'v':
