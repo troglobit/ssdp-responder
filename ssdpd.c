@@ -38,7 +38,6 @@
 #include <sys/socket.h>
 
 #include "ssdp.h"
-#include "lssdp.h"
 
 typedef struct {
 	int   sd;
@@ -552,20 +551,6 @@ static void uuidgen(void)
 
 	strcpy(uuid, buf);
 	logit(LOG_DEBUG, "URN: %s", uuid);
-}
-
-void log_callback(const char *file, const char *tag, int level, int line, const char *func, const char *message)
-{
-    if (level == LSSDP_LOG_INFO)
-	    level = LOG_INFO;
-    else if (level == LSSDP_LOG_WARN)
-	    level = LOG_WARNING;
-    else if (level == LSSDP_LOG_ERROR)
-	    level = LOG_ERR;
-    else
-	    level = LOG_DEBUG;
-
-    logit(level, "%s: %s", tag, message);
 }
 
 static void exit_handler(int signo)
