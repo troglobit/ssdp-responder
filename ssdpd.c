@@ -56,7 +56,7 @@ char uuid[42];
 static char *supported_types[] = {
 	SSDP_ST_ALL,
 	"upnp:rootdevice",
-//	"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+	"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
 	uuid,
 	NULL
 };
@@ -226,31 +226,30 @@ static void compose_response(char *type, char *buf, size_t len)
 		strncpy(usn, uuid, sizeof(usn));
 
 	snprintf(buf, len, "HTTP/1.1 200 OK\r\n"
-		 "CACHE-CONTROL:%s\r\n"
-//		 "Date: %s\r\n"
-		 "DATE:\r\n"
-		 "EXT:\r\n"
-		 "LOCATION:%s:%d\r\n" ///%s\r\n"
-		 "SERVER:%s\r\n"
+		 "Server: %s\r\n"
+		 "Date: %s\r\n"
+		 "Location: http://%s:%d%s\r\n"
 		 "ST: %s\r\n"
+		 "EXT: \r\n"
 		 "USN: %s\r\n"
+		 "Cache-Control: %s\r\n"
 		 "\r\n",
-		 CACHING,
-//		 date,
-		 host, LOCATION_PORT, //LOCATION_DESC,
 		 server_string,
+		 date,
+		 host, LOCATION_PORT, LOCATION_DESC,
 		 type,
-		 usn);
+		 usn,
+		 CACHING);
 }
 
 static void compose_search(char *type, char *buf, size_t len)
 {
 	snprintf(buf, len, "M-SEARCH * HTTP/1.1\r\n"
-		 "HOST:%s:%d\r\n"
-		 "MAN:\"ssdp:discover\"\r\n"
-		 "MX:1\r\n"
-		 "ST:%s\r\n"
-		 "USER-AGENT:%s\r\n"
+		 "Host: %s:%d\r\n"
+		 "MAN: \"ssdp:discover\"\r\n"
+		 "MX: 1\r\n"
+		 "ST: %s\r\n"
+		 "User-Agent: %s\r\n"
 		 "\r\n",
 		 MC_SSDP_GROUP, MC_SSDP_PORT,
 		 type,
@@ -274,17 +273,18 @@ static void compose_notify(char *type, char *buf, size_t len)
 	}
 
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
-		 "HOST:%s:%d\r\n"
-		 "CACHE-CONTROL:%s\r\n"
-		 "LOCATION:%s:%d\r\n" ///%s\r\n"
-		 "SERVER:%s\r\n"
-		 "NT:%s\r\n"
-		 "NTS:ssdp:alive\r\n"
-		 "USN:%s\r\n"
-		 "\r\n", MC_SSDP_GROUP, MC_SSDP_PORT,
-		 CACHING,
-		 host, LOCATION_PORT, //LOCATION_DESC,
+		 "Host: %s:%d\r\n"
+		 "Server: %s\r\n"
+		 "Cache-Control: %s\r\n"
+		 "Location: http://%s:%d%s\r\n"
+		 "NT: %s\r\n"
+		 "NTS: ssdp:alive\r\n"
+		 "USN: %s\r\n"
+		 "\r\n",
+		 MC_SSDP_GROUP, MC_SSDP_PORT,
 		 server_string,
+		 CACHING,
+		 host, LOCATION_PORT, LOCATION_DESC,
 		 type,
 		 usn);
 }
@@ -319,7 +319,7 @@ static void send_search(int sd, char *type)
 	compose_search(type, http, len);
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+	uh->uh_sum = 0;
 
 	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 
@@ -337,13 +337,13 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 	unsigned char buf[MAX_PKT_SIZE];
 	struct udphdr *uh;
 	struct sockaddr dest;
-	struct sockaddr_in *sin;
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 
 	memset(buf, 0, sizeof(buf));
 	uh = (struct udphdr *)buf;
 	uh->uh_sport = htons(MC_SSDP_PORT);
-	if (sa)
-		uh->uh_dport = ((struct sockaddr_in *)sa)->sin_port;
+	if (sin)
+		uh->uh_dport = sin->sin_port;
 	else
 		uh->uh_dport = htons(MC_SSDP_PORT);
 
@@ -355,23 +355,22 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 
 	http = (char *)(buf + sizeof(*uh));
 	len = sizeof(buf) - sizeof(*uh);
-	if (sa)
+	if (sin)
 		compose_response(type, http, len);
 	else
 		compose_notify(type, http, len);
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+	uh->uh_sum = 0;
 
-	if (!sa) {
+	if (!sin) {
 		note = 1;
 		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
-		sa = &dest;
-		salen = sizeof(dest);
+		sin = (struct sockaddr_in *)&dest;
 	}
 
 	logit(LOG_DEBUG, "Sending %s ...", !note ? "reply" : "notify");
-	num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
+	num = sendto(sd, buf, pktlen(buf), 0, sin, sizeof(*sin));
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s", !note ? "reply" : "notify", type);
 }
@@ -492,7 +491,7 @@ static void announce(lssdp_ctx *ctx)
 		if (!iflist[i].ifname)
 			continue;
 
-		send_search(iflist[i].sd, "upnp:rootdevice");
+//		send_search(iflist[i].sd, "upnp:rootdevice");
 		for (j = 0; supported_types[j]; j++) {
 			/* UUID sent in SSDP_ST_ALL, first announce */
 			if (!strcmp(supported_types[j], uuid))
