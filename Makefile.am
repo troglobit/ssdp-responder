@@ -1,7 +1,7 @@
 sbin_PROGRAMS  = ssdpd
 ssdpd_SOURCES  = ssdpd.c ssdp.h web.c
 ssdpd_CFLAGS   = -W -Wall -Wextra -Wno-unused
-ssdpd_CPPFLAGS = -D_GNU_SOURCE
+ssdpd_CPPFLAGS = -D_GNU_SOURCE -D_BSD_SOURCE -D_DEFAULT_SOURCE
 EXTRA_DIST     = README.md LICENSE
 
 release: distcheck
