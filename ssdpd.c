@@ -296,7 +296,7 @@ static void send_search(int sd, char *type)
 	compose_search(type, http, len);
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+	uh->uh_sum = 0;
 
 	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 
@@ -338,7 +338,7 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 		compose_notify(type, http, len);
 
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
-	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
+	uh->uh_sum = 0;
 
 	if (!sin) {
 		note = 1;
