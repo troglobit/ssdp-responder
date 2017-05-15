@@ -61,7 +61,8 @@ const char *xml =
 	"  <UDN>uuid:%s</UDN>\r\n"
 	"  <presentationURL>http://%s</presentationURL>\r\n"
 	" </device>\r\n"
-	"</root>\r\n";
+	"</root>\r\n"
+	"\r\n";
 
 void register_socket(int sd, char *ifname, void (*cb)(int sd));
 
@@ -102,6 +103,10 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname)
 
 void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 {
+	char *head = "HTTP/1.1 200 OK\r\n"
+		"Content-Type: text/xml\r\n"
+		"Connection: close\r\n"
+		"\r\n";
 	char hostname[64];
 	char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
 	int rcvd, fd, bytes_read;
@@ -136,7 +141,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		gethostname(hostname, sizeof(hostname));
 
 		logit(LOG_DEBUG, "Sending XML reply ...");
-		send(sd, "HTTP/1.1 200 OK\r\n\r\n", 19, 0);
+		send(sd, head, strlen(head), 0);
 		snprintf(data_to_send, sizeof(data_to_send), xml, hostname,
 			 MANUFACTURER,
 			 MODEL,
