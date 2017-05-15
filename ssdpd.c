@@ -314,13 +314,13 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 	unsigned char buf[MAX_PKT_SIZE];
 	struct udphdr *uh;
 	struct sockaddr dest;
-	struct sockaddr_in *sin;
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 
 	memset(buf, 0, sizeof(buf));
 	uh = (struct udphdr *)buf;
 	uh->uh_sport = htons(MC_SSDP_PORT);
-	if (sa)
-		uh->uh_dport = ((struct sockaddr_in *)sa)->sin_port;
+	if (sin)
+		uh->uh_dport = sin->sin_port;
 	else
 		uh->uh_dport = htons(MC_SSDP_PORT);
 
@@ -332,7 +332,7 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 
 	http = (char *)(buf + sizeof(*uh));
 	len = sizeof(buf) - sizeof(*uh);
-	if (sa)
+	if (sin)
 		compose_response(type, http, len);
 	else
 		compose_notify(type, http, len);
@@ -340,15 +340,14 @@ static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t sale
 	uh->uh_ulen = htons(strlen(http) + sizeof(*uh));
 	uh->uh_sum = in_cksum((unsigned short *)uh, sizeof(*uh));
 
-	if (!sa) {
+	if (!sin) {
 		note = 1;
 		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
-		sa = &dest;
-		salen = sizeof(dest);
+		sin = (struct sockaddr_in *)&dest;
 	}
 
 	logit(LOG_DEBUG, "Sending %s ...", !note ? "reply" : "notify");
-	num = sendto(sd, buf, pktlen(buf), 0, sa, salen);
+	num = sendto(sd, buf, pktlen(buf), 0, sin, sizeof(*sin));
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s", !note ? "reply" : "notify", type);
 }
