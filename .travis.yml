@@ -10,4 +10,5 @@ sudo: false
 script:
   - ./autogen.sh
   - ./configure
+  - cat /usr/include/netinet/udp.h
   - make
