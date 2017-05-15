@@ -1,7 +1,4 @@
-
 #include <syslog.h>
-
-#define BYTES 1024
 
 /* Notify should be less than half the cache timeout */
 #define NOTIFY_INTERVAL      600

@@ -40,7 +40,6 @@
                         warn("Failed enabling %s for web service", #opt); \
         } while (0);
 
-char *root = "www/";
 const char *xml =
 	"<?xml version=\"1.0\"?>\r\n"
 	"<root xmlns=\"urn:schemas-upnp-org:device-1-0\">\r\n"
@@ -103,7 +102,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		"Connection: close\r\n"
 		"\r\n";
 	char hostname[64];
-	char mesg[99999], *reqline[3], data_to_send[BYTES], path[99999];
+	char mesg[1024], *reqline[3];
 	int rcvd, fd, bytes_read;
 
 	memset(mesg, 0, sizeof(mesg));
@@ -115,7 +114,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 	logit(LOG_DEBUG, "%s", mesg);
 	reqline[0] = strtok(mesg, " \t\n");
-	if (strncmp(reqline[0], "GET\0", 4) == 0) {
+	if (strncmp(reqline[0], "GET", 4) == 0) {
 		reqline[1] = strtok(NULL, " \t");
 		reqline[2] = strtok(NULL, " \t\n");
 		if (strncmp(reqline[2], "HTTP/1.0", 8) != 0 && strncmp(reqline[2], "HTTP/1.1", 8) != 0) {
@@ -124,10 +123,8 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 			goto error;
 		}
 
-		strcpy(path, root);
-		strcpy(&path[strlen(root)], reqline[1]);
-
-		if (!strstr(path, LOCATION_DESC)) {
+		/* XXX: Add support for icon as well */
+		if (!strstr(reqline[1], LOCATION_DESC)) {
 			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
 				warn("Failed returning status 404 to client");
 			goto error;
@@ -137,11 +134,11 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 
 		logit(LOG_DEBUG, "Sending XML reply ...");
 		send(sd, head, strlen(head), 0);
-		snprintf(data_to_send, sizeof(data_to_send), xml, hostname,
+		snprintf(mesg, sizeof(mesg), xml, hostname,
 			 MANUFACTURER,
 			 MODEL,
 			 uuid, inet_ntoa(sin->sin_addr));
-		if (write(sd, data_to_send, strlen(data_to_send)) < 0)
+		if (send(sd, mesg, strlen(mesg), 0) < 0)
 			warn("Failed sending file to client");
 	}
 
