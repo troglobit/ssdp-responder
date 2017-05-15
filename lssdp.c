@@ -489,13 +489,13 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
         char * domain = lssdp->header.location.domain;
         snprintf(notify, sizeof(notify),
             "%s"
-            "HOST:%s:%d\r\n"
-            "CACHE-CONTROL:max-age=120\r\n"
-            "LOCATION:%s%s%s\r\n"
-            "SERVER:%s\n"
-            "NT:%s\r\n"
-            "NTS:ssdp:alive\r\n"
-            "USN:%s\r\n"
+            "Host: %s:%d\r\n"
+            "Cache-Control: max-age=120\r\n"
+            "Location: %s%s%s\r\n"
+            "Server: %s\n"
+            "NT: %s\r\n"
+            "NTS: ssdp:alive\r\n"
+            "USN: %s::%s\r\n"
 //          "SM_ID:%s\r\n"
 //          "DEV_TYPE:%s\r\n"
             "\r\n",
@@ -506,7 +506,8 @@ int lssdp_send_notify(lssdp_ctx * lssdp) {
             lssdp->header.location.suffix,
 		 lssdp->header.server_string,
             lssdp->header.search_target,                // NT (Notify Type)
-            lssdp->header.unique_service_name          // USN
+		 lssdp->header.unique_service_name,          // USN
+		 lssdp->header.search_target
 //          lssdp->header.sm_id,                        // SM_ID    (addtional field)
 //          lssdp->header.device_type                   // DEV_TYPE (addtional field)
         );
@@ -677,24 +678,25 @@ static int lssdp_send_response(lssdp_ctx * lssdp, struct sockaddr_in address) {
     char * domain = lssdp->header.location.domain;
     int response_len = snprintf(response, sizeof(response),
         "%s"
-        "CACHE-CONTROL:max-age=120\r\n"
-        "DATE:\r\n"
-        "EXT:\r\n"
-        "LOCATION:%s%s%s\r\n"
-        "SERVER:OS/version product/version\r\n"
-        "ST:%s\r\n"
-        "USN:%s\r\n"
-        "SM_ID:%s\r\n"
-        "DEV_TYPE:%s\r\n"
+        "Cache-Control: max-age=120\r\n"
+        "Ext:\r\n"
+        "Location: %s%s%s\r\n"
+        "Server: %s\r\n"
+        "ST: %s\r\n"
+        "USN: %s::%s\r\n"
+//        "SM_ID:%s\r\n"
+//        "DEV_TYPE:%s\r\n"
         "\r\n",
         Global.HEADER_RESPONSE,                     // HEADER
         lssdp->header.location.prefix,              // LOCATION
         strlen(domain) > 0 ? domain : interface->ip,
         lssdp->header.location.suffix,
+		 lssdp->header.server_string,
         lssdp->header.search_target,                // ST (Search Target)
-        lssdp->header.unique_service_name,          // USN
-        lssdp->header.sm_id,                        // SM_ID    (addtional field)
-        lssdp->header.device_type                   // DEV_TYPE (addtional field)
+				lssdp->header.unique_service_name,          // USN
+        lssdp->header.search_target                // ST (Search Target)
+//        lssdp->header.sm_id,                        // SM_ID    (addtional field)
+//        lssdp->header.device_type                   // DEV_TYPE (addtional field)
     );
 
     // 3. set port to address
