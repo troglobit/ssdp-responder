@@ -696,12 +696,12 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
-
+#if 0
 	if (optind >= argc) {
 		warnx("Not enough arguments");
 		return usage(1);
 	}
-
+#endif
 	signal_init();
 
         if (debug) {
