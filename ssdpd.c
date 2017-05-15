@@ -51,7 +51,7 @@ char uuid[42];
 static char *supported_types[] = {
 	SSDP_ST_ALL,
 	"upnp:rootdevice",
-//	"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+	"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
 	uuid,
 	NULL
 };
