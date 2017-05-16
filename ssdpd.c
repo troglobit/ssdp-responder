@@ -68,7 +68,6 @@ char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 in_addr_t graal;
 
 void open_web_socket(char *ifname);
-unsigned short in_cksum(unsigned short *addr, int len);
 static void ssdp_recv(int sd);
 
 void register_socket(int sd, char *ifname, void (*cb)(int sd))
