@@ -376,7 +376,7 @@ static void send_search(struct ifsock *ifs, char *type)
 		logit(LOG_WARNING, "Failed sending SSDP M-SEARCH");
 }
 
-static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa, socklen_t salen)
+static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 {
 	int s;
 	size_t i, len, note = 0;
@@ -451,7 +451,7 @@ static void ssdp_recv(int sd)
 			if (!type) {
 				logit(LOG_DEBUG, "No Search Type (ST:) found in M-SEARCH *, assuming " SSDP_ST_ALL);
 				type = SSDP_ST_ALL;
-				send_message(ifs, type, &sa, salen);
+				send_message(ifs, type, &sa);
 				return;
 			}
 
@@ -471,7 +471,7 @@ static void ssdp_recv(int sd)
 				if (!strcmp(supported_types[i], type)) {
 					logit(LOG_DEBUG, "M-SEARCH * ST: %s from %s port %d", type,
 					      inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
-					send_message(ifs, type, &sa, salen);
+					send_message(ifs, type, &sa);
 					return;
 				}
 			}
@@ -699,7 +699,7 @@ static void announce(int mod)
 			if (!strcmp(supported_types[i], uuid))
 				continue;
 
-			send_message(ifs, supported_types[i], NULL, 0);
+			send_message(ifs, supported_types[i], NULL);
 		}
 	}
 }
