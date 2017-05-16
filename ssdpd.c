@@ -42,6 +42,8 @@
 struct ifsock {
 	LIST_ENTRY(ifsock) link;
 
+	int stale;
+
 	/*
 	 * Sockets for inbound and outbound
 	 *
@@ -92,6 +94,20 @@ static struct ifsock *find_outbound(struct sockaddr *sa)
 			continue;
 
 		if ((a & m) == (cand & m))
+			return entry;
+	}
+
+	return NULL;
+}
+
+/* Exact match, must be same ifaddr as sa */
+static struct ifsock *find_iface(struct sockaddr *sa)
+{
+	struct ifsock *entry;
+	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
+
+	LIST_FOREACH(entry, &il, link) {
+		if (entry->addr.sin_addr.s_addr == addr->sin_addr.s_addr)
 			return entry;
 	}
 
@@ -179,6 +195,8 @@ static int open_socket(char *ifname, struct sockaddr *addr, int port)
 		logit(LOG_ERR, "Failed setting multicast interface: %s", strerror(errno));
 		return -1;
 	}
+
+	logit(LOG_DEBUG, "Adding new interface %s with address %s", ifname, inet_ntoa(address->sin_addr));
 
 	return sd;
 }
@@ -497,6 +515,34 @@ static int multicast_join(int sd, struct sockaddr *sa)
 	return 0;
 }
 
+static void mark(void)
+{
+	struct ifsock *entry;
+
+	LIST_FOREACH(entry, &il, link) {
+		if (entry->out != -1)
+			entry->stale = 1;
+		else
+			entry->stale = 0;
+	}
+}
+
+static void sweep(void)
+{
+	struct ifsock *entry, *tmp;
+
+	LIST_FOREACH_SAFE(entry, &il, link, tmp) {
+		if (!entry->stale)
+			continue;
+
+		logit(LOG_DEBUG, "Removing stale entry %s", inet_ntoa(entry->addr.sin_addr));
+
+		LIST_REMOVE(entry, link);
+		close(entry->out);
+		free(entry);
+	}
+}
+
 /*
  * Should be called on each NOTIFY interval in case new host addresses
  * XXX: Add mark-and-sweep to be able to prune removed host addresses.
@@ -511,6 +557,25 @@ static void ssdp_init(int in)
 		return;
 	}
 
+	/* Mark all outbound interfaces as stale */
+	mark();
+
+	/* First pass, clear stale marker from exact matches */
+	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
+		struct ifsock *entry;
+
+		/* Do we already have it? */
+		entry = find_iface(ifa->ifa_addr);
+		if (entry) {
+			entry->stale = 0;
+			continue;
+		}
+	}
+
+	/* Clean out any stale interface addresses */
+	sweep();
+
+	/* Second pass, add new ones */
 	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
 		int sd;
 
@@ -518,6 +583,7 @@ static void ssdp_init(int in)
 //		if (filter_iface(ifa->ifa_name))
 //			continue;
 
+		/* Do we have another in the same subnet? */
 		if (filter_addr(ifa->ifa_addr))
 			continue;
 
@@ -766,6 +832,7 @@ int main(int argc, char *argv[])
 	while (running) {
 		announce();
 		wait_message(interval);
+		ssdp_init(sd);
 	}
 
 	closelog();
