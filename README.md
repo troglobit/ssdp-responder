@@ -12,11 +12,11 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-dhv] [-i SEC] IFACE [IFACE ...]
+Usage: ssdpd [-dhv] [-i SEC] [IFACE [IFACE ...]]
 
     -d        Developer debug mode
     -h        This help text
-    -i SEC    Announce interval, default 30 sec
+    -i SEC    SSDP notify interval, default 600 sec
     -v        Show program version
 
 Bug report address: https://github.com/troglobit/ssdp-responder/issues
