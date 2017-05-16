@@ -83,20 +83,20 @@ char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 static struct ifsock *find_outbound(struct sockaddr *sa)
 {
 	in_addr_t cand;
-	struct ifsock *entry;
+	struct ifsock *ifs;
 	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
 
 	cand = addr->sin_addr.s_addr;
-	LIST_FOREACH(entry, &il, link) {
+	LIST_FOREACH(ifs, &il, link) {
 		in_addr_t a, m;
 
-		a = entry->addr.sin_addr.s_addr;
-		m = entry->mask.sin_addr.s_addr;
+		a = ifs->addr.sin_addr.s_addr;
+		m = ifs->mask.sin_addr.s_addr;
 		if (a == htonl(INADDR_ANY) || m == htonl(INADDR_ANY))
 			continue;
 
 		if ((a & m) == (cand & m))
-			return entry;
+			return ifs;
 	}
 
 	return NULL;
@@ -105,12 +105,12 @@ static struct ifsock *find_outbound(struct sockaddr *sa)
 /* Exact match, must be same ifaddr as sa */
 static struct ifsock *find_iface(struct sockaddr *sa)
 {
-	struct ifsock *entry;
+	struct ifsock *ifs;
 	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
 
-	LIST_FOREACH(entry, &il, link) {
-		if (entry->addr.sin_addr.s_addr == addr->sin_addr.s_addr)
-			return entry;
+	LIST_FOREACH(ifs, &il, link) {
+		if (ifs->addr.sin_addr.s_addr == addr->sin_addr.s_addr)
+			return ifs;
 	}
 
 	return NULL;
@@ -118,26 +118,26 @@ static struct ifsock *find_iface(struct sockaddr *sa)
 
 int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
 {
-	struct ifsock *entry;
+	struct ifsock *ifs;
 	struct sockaddr_in *address = (struct sockaddr_in *)addr;
 	struct sockaddr_in *netmask = (struct sockaddr_in *)mask;
 
-	entry = calloc(1, sizeof(*entry));
-	if (!entry) {
+	ifs = calloc(1, sizeof(*ifs));
+	if (!ifs) {
 		char *host = inet_ntoa(address->sin_addr);
 
 		logit(LOG_ERR, "Failed registering host %s socket: %s", host, strerror(errno));
 		return -1;
 	}
 
-	entry->in   = in;
-	entry->out  = out;
-	entry->mod  = 1;
-	entry->cb   = cb;
-	entry->addr = *address;
+	ifs->in   = in;
+	ifs->out  = out;
+	ifs->mod  = 1;
+	ifs->cb   = cb;
+	ifs->addr = *address;
 	if (mask)
-		entry->mask = *netmask;
-	LIST_INSERT_HEAD(&il, entry, link);
+		ifs->mask = *netmask;
+	LIST_INSERT_HEAD(&il, ifs, link);
 
 	return 0;
 }
@@ -207,15 +207,15 @@ static int open_socket(char *ifname, struct sockaddr *addr, int port)
 static int close_socket(void)
 {
 	int ret = 0;
-	struct ifsock *entry, *tmp;
+	struct ifsock *ifs, *tmp;
 
-	LIST_FOREACH_SAFE(entry, &il, link, tmp) {
-		LIST_REMOVE(entry, link);
-		if (entry->out != -1)
-			ret |= close(entry->out);
+	LIST_FOREACH_SAFE(ifs, &il, link, tmp) {
+		LIST_REMOVE(ifs, link);
+		if (ifs->out != -1)
+			ret |= close(ifs->out);
 		else
-			ret |= close(entry->in);
-		free(entry);
+			ret |= close(ifs->in);
+		free(ifs);
 	}
 
 	return ret;
@@ -223,7 +223,7 @@ static int close_socket(void)
 
 static int filter_addr(struct sockaddr *sa)
 {
-	struct ifsock *entry;
+	struct ifsock *ifs;
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 
 	if (!sa)
@@ -238,9 +238,9 @@ static int filter_addr(struct sockaddr *sa)
 	if (sin->sin_addr.s_addr == htonl(INADDR_LOOPBACK))
 		return 1;
 
-	entry = find_outbound(sa);
-	if (entry) {
-		if (entry->addr.sin_addr.s_addr != htonl(INADDR_ANY))
+	ifs = find_outbound(sa);
+	if (ifs) {
+		if (ifs->addr.sin_addr.s_addr != htonl(INADDR_ANY))
 			return 1;
 	}
 
@@ -360,7 +360,7 @@ size_t pktlen(unsigned char *buf)
 	return strlen((char *)buf + hdr) + hdr;
 }
 
-static void send_search(struct ifsock *entry, char *type)
+static void send_search(struct ifsock *ifs, char *type)
 {
 	ssize_t num;
 	char buf[MAX_PKT_SIZE];
@@ -371,14 +371,14 @@ static void send_search(struct ifsock *entry, char *type)
 	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 
 	logit(LOG_DEBUG, "Sending M-SEARCH ...");
-	num = sendto(entry->out, buf, strlen(buf), 0, &dest, sizeof(struct sockaddr_in));
+	num = sendto(ifs->out, buf, strlen(buf), 0, &dest, sizeof(struct sockaddr_in));
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP M-SEARCH");
 }
 
-static void send_message(struct ifsock *entry, char *type, struct sockaddr *sa, socklen_t salen)
+static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa, socklen_t salen)
 {
-	int s, sd;
+	int s;
 	size_t i, len, note = 0;
 	ssize_t num;
 	char host[NI_MAXHOST];
@@ -387,15 +387,15 @@ static void send_message(struct ifsock *entry, char *type, struct sockaddr *sa, 
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 
 	gethostname(hostname, sizeof(hostname));
-	s = getnameinfo((struct sockaddr *)&entry->addr, sizeof(struct sockaddr_in), host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+	s = getnameinfo((struct sockaddr *)&ifs->addr, sizeof(struct sockaddr_in), host, sizeof(host), NULL, 0, NI_NUMERICHOST);
 	if (s) {
 		logit(LOG_WARNING, "Failed getnameinfo(): %s", gai_strerror(s));
 		return;
 	}
 
-	if (entry->addr.sin_addr.s_addr == htonl(INADDR_ANY))
+	if (ifs->addr.sin_addr.s_addr == htonl(INADDR_ANY))
 		return;
-	if (entry->out == -1)
+	if (ifs->out == -1)
 		return;
 
 	if (!strcmp(type, SSDP_ST_ALL))
@@ -407,16 +407,14 @@ static void send_message(struct ifsock *entry, char *type, struct sockaddr *sa, 
 	else
 		compose_notify(type, host, buf, sizeof(buf));
 
-//	sd = entry->in;
 	if (!sin) {
 		note = 1;
 		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 		sin = (struct sockaddr_in *)&dest;
-//		sd = entry->out;
 	}
-	sd = entry->out;
+
 	logit(LOG_DEBUG, "Sending %s from %s ...", !note ? "reply" : "notify", host);
-	num = sendto(sd, buf, strlen(buf), 0, sin, sizeof(struct sockaddr_in));
+	num = sendto(ifs->out, buf, strlen(buf), 0, sin, sizeof(struct sockaddr_in));
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s: %s", !note ? "reply" : "notify", type, strerror(errno));
 }
@@ -433,21 +431,17 @@ static void ssdp_recv(int sd)
 	if (len > 0) {
 		buf[len] = 0;
 
-//		logit(LOG_DEBUG, "Got pkt: %s", buf);
 		if (sa.sa_family != AF_INET)
 			return;
 
 		if (strstr(buf, "M-SEARCH *")) {
 			size_t i;
 			char *ptr, *type;
-			struct ifsock *entry;
+			struct ifsock *ifs;
 			struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
-			/* Set source port as destination in our reply */
-//			sin->sin_port = uh->source;
-
-			entry = find_outbound(&sa);
-			if (!entry) {
+			ifs = find_outbound(&sa);
+			if (!ifs) {
 				logit(LOG_DEBUG, "No matching socket for client %s", inet_ntoa(sin->sin_addr));
 				return;
 			}
@@ -457,7 +451,7 @@ static void ssdp_recv(int sd)
 			if (!type) {
 				logit(LOG_DEBUG, "No Search Type (ST:) found in M-SEARCH *, assuming " SSDP_ST_ALL);
 				type = SSDP_ST_ALL;
-				send_message(entry, type, &sa, salen);
+				send_message(ifs, type, &sa, salen);
 				return;
 			}
 
@@ -477,7 +471,7 @@ static void ssdp_recv(int sd)
 				if (!strcmp(supported_types[i], type)) {
 					logit(LOG_DEBUG, "M-SEARCH * ST: %s from %s port %d", type,
 					      inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
-					send_message(entry, type, &sa, salen);
+					send_message(ifs, type, &sa, salen);
 					return;
 				}
 			}
@@ -537,40 +531,36 @@ static int multicast_join(int sd, struct sockaddr *sa)
 
 static void mark(void)
 {
-	struct ifsock *entry;
+	struct ifsock *ifs;
 
-	LIST_FOREACH(entry, &il, link) {
-		if (entry->out != -1)
-			entry->stale = 1;
+	LIST_FOREACH(ifs, &il, link) {
+		if (ifs->out != -1)
+			ifs->stale = 1;
 		else
-			entry->stale = 0;
+			ifs->stale = 0;
 	}
 }
 
 static int sweep(void)
 {
 	int modified = 0;
-	struct ifsock *entry, *tmp;
+	struct ifsock *ifs, *tmp;
 
-	LIST_FOREACH_SAFE(entry, &il, link, tmp) {
-		if (!entry->stale)
+	LIST_FOREACH_SAFE(ifs, &il, link, tmp) {
+		if (!ifs->stale)
 			continue;
 
 		modified++;
-		logit(LOG_DEBUG, "Removing stale entry %s", inet_ntoa(entry->addr.sin_addr));
+		logit(LOG_DEBUG, "Removing stale ifs %s", inet_ntoa(ifs->addr.sin_addr));
 
-		LIST_REMOVE(entry, link);
-		close(entry->out);
-		free(entry);
+		LIST_REMOVE(ifs, link);
+		close(ifs->out);
+		free(ifs);
 	}
 
 	return modified;
 }
 
-/*
- * Should be called on each NOTIFY interval in case new host addresses
- * XXX: Add mark-and-sweep to be able to prune removed host addresses.
- */
 static int ssdp_init(int in, char *iflist[], size_t num)
 {
 	int modified;
@@ -589,12 +579,12 @@ static int ssdp_init(int in, char *iflist[], size_t num)
 
 	/* First pass, clear stale marker from exact matches */
 	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
-		struct ifsock *entry;
+		struct ifsock *ifs;
 
 		/* Do we already have it? */
-		entry = find_iface(ifa->ifa_addr);
-		if (entry) {
-			entry->stale = 0;
+		ifs = find_iface(ifa->ifa_addr);
+		if (ifs) {
+			ifs->stale = 0;
 			continue;
 		}
 	}
@@ -636,30 +626,29 @@ static int ssdp_init(int in, char *iflist[], size_t num)
 
 static void handle_message(int sd)
 {
-	struct ifsock *entry;
+	struct ifsock *ifs;
 
-	LIST_FOREACH(entry, &il, link) {
-		if (entry->in != sd)
+	LIST_FOREACH(ifs, &il, link) {
+		if (ifs->in != sd)
 			continue;
 
-		if (entry->cb)
-			entry->cb(sd);
+		if (ifs->cb)
+			ifs->cb(sd);
 	}
 }
 
-static void wait_message(time_t tmo) //uint8_t interval)
+static void wait_message(time_t tmo)
 {
 	int num = 1, timeout;
 	size_t ifnum = 0;
-//	time_t end = time(NULL) + interval;
 	struct pollfd pfd[MAX_NUM_IFACES];
-	struct ifsock *entry;
+	struct ifsock *ifs;
 
-	LIST_FOREACH(entry, &il, link) {
-		if (entry->out != -1)
+	LIST_FOREACH(ifs, &il, link) {
+		if (ifs->out != -1)
 			continue;
 
-		pfd[ifnum].fd = entry->in;
+		pfd[ifnum].fd = ifs->in;
 		pfd[ifnum].events = POLLIN | POLLHUP;
 		ifnum++;
 	}
@@ -671,7 +660,7 @@ static void wait_message(time_t tmo) //uint8_t interval)
 		if (timeout < 0)
 			break;
 
-		num = poll(pfd, ifnum, timeout * 1000); //(end - time(NULL)) * 1000);
+		num = poll(pfd, ifnum, timeout * 1000);
 		if (num < 0) {
 			if (EINTR == errno)
 				break;
@@ -693,24 +682,24 @@ static void wait_message(time_t tmo) //uint8_t interval)
 
 static void announce(int mod)
 {
-	struct ifsock *entry;
+	struct ifsock *ifs;
 
 	logit(LOG_INFO, "Sending SSDP NOTIFY new:%d ...", mod);
 
-	LIST_FOREACH(entry, &il, link) {
+	LIST_FOREACH(ifs, &il, link) {
 		size_t i;
 
-		if (mod && !entry->mod)
+		if (mod && !ifs->mod)
 			continue;
-		entry->mod = 0;
+		ifs->mod = 0;
 
-//		send_search(entry, "upnp:rootdevice");
+//		send_search(ifs, "upnp:rootdevice");
 		for (i = 0; supported_types[i]; i++) {
 			/* UUID sent in SSDP_ST_ALL, first announce */
 			if (!strcmp(supported_types[i], uuid))
 				continue;
 
-			send_message(entry, supported_types[i], NULL, 0);
+			send_message(ifs, supported_types[i], NULL, 0);
 		}
 	}
 }
