@@ -12,9 +12,14 @@ AC_HEADER_STDC
 AC_ARG_WITH([vendor],
 	AS_HELP_STRING([--with-vendor=VENDOR], [Set a custom vendor string]),
 	[vendor=$withval], [vendor="Troglobit Software Systems"])
+AC_ARG_WITH([vendor-url],
+	AS_HELP_STRING([--with-vendor-url=VENDOR], [Set vendor URL]))
 AC_ARG_WITH([model],
 	AS_HELP_STRING([--with-model=MODEL], [Set a custom model string]),
 	[model=$withval], [model="Generic"])
+
+AS_IF([test "x$with_vendor_url" != "xno" -a "x$with_vendor_url" != "xyes"], [
+	AC_DEFINE_UNQUOTED(MANUFACTURER_URL, "$with_vendor_url", [Manufacturer URL in XML])])
 
 AS_IF([test "x$with_vendor" != "xno"], [
 	AS_IF([test "x$vendor" = "xyes"], [

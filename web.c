@@ -50,7 +50,7 @@ const char *xml =
 	" <device>\r\n"
 	"  <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>\r\n"
 	"  <friendlyName>%s</friendlyName>\r\n"
-	"  <manufacturer>%s</manufacturer>\r\n"
+	"  <manufacturer>%s</manufacturer>\r\n%s"
 	"  <modelName>%s</modelName>\r\n"
 	"  <UDN>uuid:%s</UDN>\r\n"
 	"  <presentationURL>http://%s</presentationURL>\r\n"
@@ -101,7 +101,7 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		"Content-Type: text/xml\r\n"
 		"Connection: close\r\n"
 		"\r\n";
-	char hostname[64];
+	char hostname[64], url[128] = "";
 	char mesg[1024], *reqline[3];
 	int rcvd, fd, bytes_read;
 
@@ -131,13 +131,18 @@ void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 		}
 
 		gethostname(hostname, sizeof(hostname));
-
+#ifdef MANUFACTURER_URL
+		snprintf(url, sizeof(url), "  <manufacturerURL>%s</manufacturerURL>\r\n", MANUFACTURER_URL);
+#endif
 		logit(LOG_DEBUG, "Sending XML reply ...");
 		send(sd, head, strlen(head), 0);
-		snprintf(mesg, sizeof(mesg), xml, hostname,
+		snprintf(mesg, sizeof(mesg), xml,
+			 hostname,
 			 MANUFACTURER,
+			 url,
 			 MODEL,
-			 uuid, inet_ntoa(sin->sin_addr));
+			 uuid,
+			 inet_ntoa(sin->sin_addr));
 		if (send(sd, mesg, strlen(mesg), 0) < 0)
 			warn("Failed sending file to client");
 	}
