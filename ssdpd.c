@@ -862,7 +862,7 @@ int main(int argc, char *argv[])
 
 	sd = multicast_init();
 	if (sd < 0)
-		errx(1, "No multicast");
+		err(1, "Failed creating multicast socket");
 
 	ssdp_init(sd, &argv[optind], argc - optind);
 	web_init();

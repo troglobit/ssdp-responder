@@ -101,7 +101,7 @@ static void respond(int sd, struct sockaddr_in *sin)
 	memset(mesg, 0, sizeof(mesg));
 	rcvd = recv(sd, mesg, sizeof(mesg), 0);
 	if (rcvd <= 0) {
-		warn("recv() error");
+		logit(LOG_WARNING, "web recv() error: %s", strerror(errno));
 		goto error;
 	}
 
@@ -112,14 +112,14 @@ static void respond(int sd, struct sockaddr_in *sin)
 		reqline[2] = strtok(NULL, " \t\n");
 		if (strncmp(reqline[2], "HTTP/1.0", 8) != 0 && strncmp(reqline[2], "HTTP/1.1", 8) != 0) {
 			if (write(sd, "HTTP/1.1 400 Bad Request\r\n", 26) < 0)
-				warn("Failed returning status 400 to client");
+				logit(LOG_WARNING, "Failed returning status 400 to client: %s", strerror(errno));
 			goto error;
 		}
 
 		/* XXX: Add support for icon as well */
 		if (!strstr(reqline[1], LOCATION_DESC)) {
 			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
-				warn("Failed returning status 404 to client");
+				logit(LOG_WARNING, "Failed returning status 404 to client: %s", strerror(errno));
 			goto error;
 		}
 
@@ -137,7 +137,7 @@ static void respond(int sd, struct sockaddr_in *sin)
 			 uuid,
 			 inet_ntoa(sin->sin_addr));
 		if (send(sd, mesg, strlen(mesg), 0) < 0)
-			warn("Failed sending file to client");
+			logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));
 	}
 
 error:
