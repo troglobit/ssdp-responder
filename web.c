@@ -17,6 +17,7 @@
 
 #include <config.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <netdb.h>
@@ -87,7 +88,7 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname)
         return &sin;
 }
 
-static void respond(int sd, struct sockaddr_in *sin, socklen_t len)
+static void respond(int sd, struct sockaddr_in *sin)
 {
 	char *head = "HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/xml\r\n"
@@ -148,18 +149,21 @@ void web_recv(int sd)
 {
 	int client;
 	char ifname[IF_NAMESIZE] = "UNKNOWN";
-	socklen_t len;
-	struct sockaddr_in sin, *sin_if;
+	struct sockaddr_in *sin;
 
-	client = accept(sd, (struct sockaddr *)&sin, &len);
+	client = accept(sd, NULL, NULL);
 	if (client < 0) {
-		warn("accept() error");
+		logit(LOG_ERR, "accept() error: %s", strerror(errno));
 		return;
 	}
 
-	sin_if = stream_peek(client, ifname);
+	sin = stream_peek(client, ifname);
+	if (!sin) {
+		logit(LOG_ERR, "Failed resolving client interface: %s", strerror(errno));
+		return;
+	}
 
-	respond(client, sin_if, len);
+	respond(client, sin);
 	shutdown(client, SHUT_RDWR);
 	close(client);
 }
