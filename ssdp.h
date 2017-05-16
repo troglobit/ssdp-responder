@@ -33,6 +33,13 @@
 
 #define logit(lvl, fmt, args...) syslog(lvl, fmt, ##args)
 
+#define ENABLE_SOCKOPT(sd, level, opt)					\
+        do {								\
+                int val = 1;						\
+                if (setsockopt(sd, level, opt, &val, sizeof(val)) < 0)	\
+                        warn("Failed enabling %s for web service", #opt); \
+        } while (0);
+
 extern int debug;
 extern char uuid[];
 

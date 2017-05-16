@@ -33,13 +33,6 @@
 
 #include "ssdp.h"
 
-#define ENABLE_SOCKOPT(sd, level, opt)					\
-        do {								\
-                int val = 1;						\
-                if (setsockopt(sd, level, opt, &val, sizeof(val)) < 0)	\
-                        warn("Failed enabling %s for web service", #opt); \
-        } while (0);
-
 const char *xml =
 	"<?xml version=\"1.0\"?>\r\n"
 	"<root xmlns=\"urn:schemas-upnp-org:device-1-0\">\r\n"
