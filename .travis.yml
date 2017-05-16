@@ -14,5 +14,7 @@ compiler:
 # so we must customize the default build script to run ./autogen.sh
 script:
   - ./autogen.sh
-  - ./configure
-  - make
+  - ./configure --prefix=
+  - make clean
+  - make -j5
+  - DESTDIR=~/tmp make install-strip
