@@ -38,14 +38,17 @@
 #include <sys/socket.h>
 
 #include "ssdp.h"
+#include "queue.h"
 
-typedef struct {
+struct ifsock {
+	LIST_ENTRY(ifsock) link;
+
 	int   sd;
 	char *ifname;
 	void (*cb)(int);
-} ifsock_t;
+};
 
-char uuid[42];
+LIST_HEAD(, ifsock) il = LIST_HEAD_INITIALIZER();
 
 static char *supported_types[] = {
 	SSDP_ST_ALL,
@@ -57,9 +60,8 @@ static char *supported_types[] = {
 
 int      debug = 0;
 int      running = 1;
-size_t   ifnum = 0;
-ifsock_t iflist[MAX_NUM_IFACES];
 
+char uuid[42];
 char host[NI_MAXHOST] = "1.2.3.4";
 char hostname[64];
 char *os = NULL, *ver = NULL;
@@ -72,10 +74,18 @@ static void ssdp_recv(int sd);
 
 void register_socket(int sd, char *ifname, void (*cb)(int sd))
 {
-	iflist[ifnum].sd = sd;
-	iflist[ifnum].ifname = ifname;
-	iflist[ifnum].cb = cb;
-	ifnum++;
+	struct ifsock *entry;
+
+	entry = malloc(sizeof(*entry));
+	if (!entry) {
+		logit(LOG_ERR, "Failed registering socket: %s", strerror(errno));
+		return;
+	}
+
+	entry->sd = sd;
+	entry->ifname = ifname;
+	entry->cb = cb;
+	LIST_INSERT_HEAD(&il, entry, link);
 }
 
 void open_ssdp_socket(char *ifname)
@@ -123,11 +133,14 @@ void open_ssdp_socket(char *ifname)
 
 static int close_socket(void)
 {
-	size_t i;
 	int ret = 0;
+	struct ifsock *entry, *tmp;
 
-	for (i = 0; i < ifnum; i++)
-		ret |= close(iflist[i].sd);
+	LIST_FOREACH_SAFE(entry, &il, link, tmp) {
+		LIST_REMOVE(entry, link);
+		ret |= close(entry->sd);
+		free(entry);
+	}
 
 	return ret;
 }
@@ -135,17 +148,18 @@ static int close_socket(void)
 static void getifaddr(int sd, char *host, size_t len)
 {
 	size_t i;
-	char *ifname = NULL;;
+	char *ifname = NULL;
 	struct ifaddrs *ifaddrs, *ifa;
+	struct ifsock *entry;
 
 	if (getifaddrs(&ifaddrs) < 0)
 		err(1, "Failed getifaddrs()");
 
-	for (i = 0; i < ifnum; i++) {
-		if (iflist[i].sd != sd)
+	LIST_FOREACH(entry, &il, link) {
+		if (entry->sd != sd)
 			continue;
 
-		ifname = iflist[i].ifname;
+		ifname = entry->ifname;
 	}
 
 	if (!ifname)
@@ -421,20 +435,37 @@ static void ssdp_recv(int sd)
 	}
 }
 
+static void handle_message(int sd)
+{
+	struct ifsock *entry;
+
+	LIST_FOREACH(entry, &il, link) {
+		if (entry->sd != sd)
+			continue;
+
+		if (entry->cb)
+			entry->cb(sd);
+	}
+}
+
 static void wait_message(uint8_t interval)
 {
-	size_t i;
 	int num = 1;
+	size_t ifnum = 0;
 	time_t end = time(NULL) + interval;
 	struct pollfd pfd[MAX_NUM_IFACES];
+	struct ifsock *entry;
 
-	for (i = 0; i < ifnum; i++) {
-		pfd[i].fd = iflist[i].sd;
-		pfd[i].events = POLLIN | POLLHUP;
+	LIST_FOREACH(entry, &il, link) {
+		pfd[ifnum].fd = entry->sd;
+		pfd[ifnum].events = POLLIN | POLLHUP;
+		ifnum++;
 	}
 
 again:
 	while (1) {
+		size_t i;
+
 		num = poll(pfd, ifnum, (end - time(NULL)) * 1000);
 		if (num < 0) {
 			if (EINTR == errno)
@@ -448,7 +479,7 @@ again:
 
 		for (i = 0; num > 0 && i < ifnum; i++) {
 			if (pfd[i].revents & POLLIN) {
-				iflist[i].cb(iflist[i].sd);
+				handle_message(pfd[i].fd);
 				num--;
 			}
 		}
@@ -457,21 +488,21 @@ again:
 
 static void announce(void)
 {
-	size_t i;
+	struct ifsock *entry;
 
-	for (i = 0; i < ifnum; i++) {
-		size_t j;
+	LIST_FOREACH(entry, &il, link) {
+		size_t i;
 
-		if (!iflist[i].ifname)
+		if (!entry->ifname)
 			continue;
 
-//		send_search(iflist[i].sd, "upnp:rootdevice");
-		for (j = 0; supported_types[j]; j++) {
+//		send_search(entry->sd, "upnp:rootdevice");
+		for (i = 0; supported_types[i]; i++) {
 			/* UUID sent in SSDP_ST_ALL, first announce */
-			if (!strcmp(supported_types[j], uuid))
+			if (!strcmp(supported_types[i], uuid))
 				continue;
 
-			send_message(iflist[i].sd, supported_types[j], NULL, 0);
+			send_message(entry->sd, supported_types[i], NULL, 0);
 		}
 	}
 }
