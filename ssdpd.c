@@ -32,7 +32,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <net/if.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <sys/socket.h>
@@ -43,8 +42,18 @@
 struct ifsock {
 	LIST_ENTRY(ifsock) link;
 
-	int   sd;
-	char *ifname;
+	/*
+	 * Sockets for inbound and outbound
+	 *
+	 * - The inbound is the multicast socket, shared between all ifaces
+	 * - The outbound is bound to the iface address and a random port
+	 */
+	int in, out;
+
+	/* Interface address and netmask */
+	struct sockaddr_in addr;
+	struct sockaddr_in mask;
+
 	void (*cb)(int);
 };
 
@@ -62,73 +71,119 @@ int      debug = 0;
 int      running = 1;
 
 char uuid[42];
-char host[NI_MAXHOST] = "1.2.3.4";
 char hostname[64];
 char *os = NULL, *ver = NULL;
 char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 
-in_addr_t graal;
 
-void open_web_socket(char *ifname);
-static void ssdp_recv(int sd);
-
-void register_socket(int sd, char *ifname, void (*cb)(int sd))
+static struct ifsock *find_by_host(struct sockaddr *sa)
 {
+	char host[32];
+	in_addr_t cand;
 	struct ifsock *entry;
+	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
 
-	entry = malloc(sizeof(*entry));
-	if (!entry) {
-		logit(LOG_ERR, "Failed registering socket: %s", strerror(errno));
-		return;
+	cand = addr->sin_addr.s_addr;
+	snprintf(host, sizeof(host), "%s", inet_ntoa(addr->sin_addr));
+
+	LIST_FOREACH(entry, &il, link) {
+		in_addr_t a, m;
+
+		a = entry->addr.sin_addr.s_addr;
+		m = entry->mask.sin_addr.s_addr;
+		if (a == htonl(INADDR_ANY) || m == htonl(INADDR_ANY))
+			continue;
+
+		if ((a & m) == (cand & m))
+			return entry;
 	}
 
-	entry->sd = sd;
-	entry->ifname = ifname;
-	entry->cb = cb;
-	LIST_INSERT_HEAD(&il, entry, link);
+	return NULL;
 }
 
-void open_ssdp_socket(char *ifname)
+int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
 {
-	char loop;
-	int sd, val, rc;
-	struct ifreq ifr;
-	struct ip_mreqn mreq;
+	struct ifsock *entry;
+	struct sockaddr_in *address = (struct sockaddr_in *)addr;
+	struct sockaddr_in *netmask = (struct sockaddr_in *)mask;
 
-	sd = socket(AF_INET, SOCK_RAW | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_UDP);
-	if (sd < 0)
-		err(1, "Cannot open socket");
+	entry = calloc(1, sizeof(*entry));
+	if (!entry) {
+		char *host = inet_ntoa(address->sin_addr);
 
-	memset(&ifr, 0, sizeof(ifr));
-	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
-	if (setsockopt(sd, SOL_SOCKET, SO_BINDTODEVICE, (void *)&ifr, sizeof(ifr)) < 0) {
-		if (ENODEV == errno) {
-			warnx("Not a valid interface, %s, skipping ...", ifname);
-			close(sd);
-			return;
-		}
-
-		err(1, "Cannot bind socket to interface %s", ifname);
+		logit(LOG_ERR, "Failed registering host %s socket: %s", host, strerror(errno));
+		return -1;
 	}
 
+	entry->in   = in;
+	entry->out  = out;
+	entry->cb   = cb;
+	entry->addr = *address;
+	if (mask)
+		entry->mask = *netmask;
+	LIST_INSERT_HEAD(&il, entry, link);
+
+	return 0;
+}
+
+static int open_socket(char *ifname, struct sockaddr *addr, int port)
+{
+	int sd, val, rc;
+	char loop;
+	struct ip_mreqn mreq;
+	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
+
+	sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+	if (sd < 0)
+		return -1;
+
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(port);
+	sin.sin_addr = address->sin_addr;
+	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+		close(sd);
+		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(address->sin_addr), port, strerror(errno));
+		return -1;
+	}
+#if 0
+        ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEADDR);
+#ifdef SO_REUSEPORT
+        ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
+#endif
+#endif
 	memset(&mreq, 0, sizeof(mreq));
-	graal = inet_addr(MC_SSDP_GROUP);
-	mreq.imr_multiaddr.s_addr = graal;
-	mreq.imr_ifindex = if_nametoindex(ifname);
-        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)))
-		err(1, "Failed joining group %s", MC_SSDP_GROUP);
+	mreq.imr_address = address->sin_addr;
+	mreq.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
+        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))) {
+		close(sd);
+		logit(LOG_ERR, "Failed joining group %s: %s", MC_SSDP_GROUP, strerror(errno));
+		return -1;
+	}
 
 	val = 2;		/* Default 2, but should be configurable */
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
-	if (rc < 0)
-		err(1, "Cannot set TTL");
+	if (rc < 0) {
+		close(sd);
+		logit(LOG_ERR, "Failed setting multicast TTL: %s", strerror(errno));
+		return -1;
+	}
 
 	loop = 0;
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
-	if (rc < 0)
-		err(1, "Cannot disable MC loop");
+	if (rc < 0) {
+		close(sd);
+		logit(LOG_ERR, "Failed disabing multicast loop: %s", strerror(errno));
+		return -1;
+	}
 
-	register_socket(sd, ifname, ssdp_recv);
+	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, &address->sin_addr, sizeof(address->sin_addr));
+	if (rc < 0) {
+		close(sd);
+		logit(LOG_ERR, "Failed setting multicast interface: %s", strerror(errno));
+		return -1;
+	}
+
+	return sd;
 }
 
 static int close_socket(void)
@@ -138,63 +193,51 @@ static int close_socket(void)
 
 	LIST_FOREACH_SAFE(entry, &il, link, tmp) {
 		LIST_REMOVE(entry, link);
-		ret |= close(entry->sd);
+		if (entry->out != -1)
+			ret |= close(entry->out);
+		else
+			ret |= close(entry->in);
 		free(entry);
 	}
 
 	return ret;
 }
 
-static void getifaddr(int sd, char *host, size_t len)
+static int filter_addr(struct sockaddr *sa)
 {
-	size_t i;
-	char *ifname = NULL;
-	struct ifaddrs *ifaddrs, *ifa;
 	struct ifsock *entry;
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 
-	if (getifaddrs(&ifaddrs) < 0)
-		err(1, "Failed getifaddrs()");
+	if (!sa)
+		return 1;
 
-	LIST_FOREACH(entry, &il, link) {
-		if (entry->sd != sd)
-			continue;
+	if (sa->sa_family != AF_INET)
+		return 1;
 
-		ifname = entry->ifname;
+	if (sin->sin_addr.s_addr == htonl(INADDR_ANY))
+		return 1;
+
+	if (sin->sin_addr.s_addr == htonl(INADDR_LOOPBACK))
+		return 1;
+
+	entry = find_by_host(sa);
+	if (entry) {
+		if (entry->addr.sin_addr.s_addr != htonl(INADDR_ANY))
+			return 1;
 	}
 
-	if (!ifname)
-		errx(1, "Cannot find a matching interface for socket %d", sd);
-
-	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
-		int s;
-
-		if (!ifa->ifa_addr)
-			continue;
-
-		if (ifa->ifa_addr->sa_family != AF_INET)
-			continue;
-
-		if (strcmp(ifa->ifa_name, ifname))
-			continue;
-
-		s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
-				host, len, NULL, 0, NI_NUMERICHOST);
-		if (s)
-			errx(1, "Failed getnameinfo(): %s", gai_strerror(s));
-		break;
-	}
-	freeifaddrs(ifaddrs);
+	return 0;
 }
 
 static void compose_addr(struct sockaddr_in *sin, char *group, int port)
 {
 	memset(sin, 0, sizeof(*sin));
 	sin->sin_family      = AF_INET;
-	sin->sin_port        = htons(MC_SSDP_PORT);
+	sin->sin_port        = htons(port);
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
-static void compose_response(char *type, char *buf, size_t len)
+static void compose_response(char *type, char *host, char *buf, size_t len)
 {
 	char usn[256];
 	char date[42];
@@ -245,7 +288,7 @@ static void compose_search(char *type, char *buf, size_t len)
 		 server_string);
 }
 
-static void compose_notify(char *type, char *buf, size_t len)
+static void compose_notify(char *type, char *host, char *buf, size_t len)
 {
 	char usn[256];
 
@@ -285,83 +328,65 @@ size_t pktlen(unsigned char *buf)
 	return strlen((char *)buf + hdr) + hdr;
 }
 
-static void send_search(int sd, char *type)
+static void send_search(struct ifsock *entry, char *type)
 {
-	size_t i, len, note = 0;
 	ssize_t num;
-	char *http;
-	unsigned char buf[MAX_PKT_SIZE];
-	struct udphdr *uh;
+	char buf[MAX_PKT_SIZE];
 	struct sockaddr dest;
-	struct sockaddr_in *sin;
 
 	memset(buf, 0, sizeof(buf));
-	uh = (struct udphdr *)buf;
-	uh->source = htons(MC_SSDP_PORT);
-	uh->dest   = htons(MC_SSDP_PORT);
-
-	getifaddr(sd, host, sizeof(host));
-	gethostname(hostname, sizeof(hostname));
-
-	http = (char *)(buf + sizeof(*uh));
-	len = sizeof(buf) - sizeof(*uh);
-	compose_search(type, http, len);
-
-	uh->len   = htons(strlen(http) + sizeof(*uh));
-	uh->check = 0;
-
+	compose_search(type, buf, sizeof(buf));
 	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 
 	logit(LOG_DEBUG, "Sending M-SEARCH ...");
-	num = sendto(sd, buf, pktlen(buf), 0, &dest, sizeof(struct sockaddr_in));
+	num = sendto(entry->out, buf, strlen(buf), 0, &dest, sizeof(struct sockaddr_in));
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP M-SEARCH");
 }
 
-static void send_message(int sd, char *type, struct sockaddr *sa, socklen_t salen)
+static void send_message(struct ifsock *entry, char *type, struct sockaddr *sa, socklen_t salen)
 {
+	int s, sd;
 	size_t i, len, note = 0;
 	ssize_t num;
-	char *http;
-	unsigned char buf[MAX_PKT_SIZE];
-	struct udphdr *uh;
+	char host[NI_MAXHOST];
+	char buf[MAX_PKT_SIZE];
 	struct sockaddr dest;
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 
-	memset(buf, 0, sizeof(buf));
-	uh = (struct udphdr *)buf;
-	uh->source = htons(MC_SSDP_PORT);
-	if (sin)
-		uh->dest = sin->sin_port;
-	else
-		uh->dest = htons(MC_SSDP_PORT);
-
-	getifaddr(sd, host, sizeof(host));
 	gethostname(hostname, sizeof(hostname));
+	s = getnameinfo((struct sockaddr *)&entry->addr, sizeof(struct sockaddr_in), host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+	if (s) {
+		logit(LOG_WARNING, "Failed getnameinfo(): %s", gai_strerror(s));
+		return;
+	}
+
+	if (entry->addr.sin_addr.s_addr == htonl(INADDR_ANY))
+		return;
+	if (entry->out == -1)
+		return;
 
 	if (!strcmp(type, SSDP_ST_ALL))
 		type = NULL;
 
-	http = (char *)(buf + sizeof(*uh));
-	len = sizeof(buf) - sizeof(*uh);
+	memset(buf, 0, sizeof(buf));
 	if (sin)
-		compose_response(type, http, len);
+		compose_response(type, host, buf, sizeof(buf));
 	else
-		compose_notify(type, http, len);
+		compose_notify(type, host, buf, sizeof(buf));
 
-	uh->len   = htons(strlen(http) + sizeof(*uh));
-	uh->check = 0;
-
+//	sd = entry->in;
 	if (!sin) {
 		note = 1;
 		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
 		sin = (struct sockaddr_in *)&dest;
+//		sd = entry->out;
 	}
-
-	logit(LOG_DEBUG, "Sending %s ...", !note ? "reply" : "notify");
-	num = sendto(sd, buf, pktlen(buf), 0, sin, sizeof(*sin));
+	sd = entry->out;
+	logit(LOG_DEBUG, "Sending %s from %s ...", !note ? "reply" : "notify", host);
+	num = sendto(sd, buf, strlen(buf), 0, sin, sizeof(struct sockaddr_in));
 	if (num < 0)
-		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s", !note ? "reply" : "notify", type);
+		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s: %s", !note ? "reply" : "notify", type, strerror(errno));
 }
 
 static void ssdp_recv(int sd)
@@ -369,42 +394,38 @@ static void ssdp_recv(int sd)
 	ssize_t len;
 	struct sockaddr sa;
 	socklen_t salen;
-	unsigned char buf[MAX_PKT_SIZE];
+	char buf[MAX_PKT_SIZE];
 
 	memset(buf, 0, sizeof(buf));
 	len = recvfrom(sd, buf, sizeof(buf), MSG_DONTWAIT, &sa, &salen);
 	if (len > 0) {
-		struct ip *ip;
-		struct udphdr *uh;
-		char *http;
-
 		buf[len] = 0;
-		ip = (struct ip *)buf;
-		if (ip->ip_dst.s_addr != graal)
-			return;
 
-		uh = (struct udphdr *)(buf + (ip->ip_hl << 2));
-		if (uh->dest != htons(MC_SSDP_PORT))
-			return;
-
+//		logit(LOG_DEBUG, "Got pkt: %s", buf);
 		if (sa.sa_family != AF_INET)
 			return;
 
-		http = (char *)(uh + sizeof(struct udphdr));
-		http = (char *)(buf + (ip->ip_hl << 2) + sizeof(struct udphdr));
-		if (strstr(http, "M-SEARCH *")) {
+		if (strstr(buf, "M-SEARCH *")) {
 			size_t i;
 			char *ptr, *type;
+			struct ifsock *entry;
 			struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
 
 			/* Set source port as destination in our reply */
-			sin->sin_port = uh->source;
+//			sin->sin_port = uh->source;
 
-			type = strcasestr(http, "\r\nST:");
+			entry = find_by_host(&sa);
+			if (!entry) {
+				logit(LOG_INFO, "No matching socket for client %s", inet_ntoa(sin->sin_addr));
+				return;
+			}
+			logit(LOG_INFO, "Matching socket for client %s", inet_ntoa(sin->sin_addr));
+
+			type = strcasestr(buf, "\r\nST:");
 			if (!type) {
 				logit(LOG_DEBUG, "No Search Type (ST:) found in M-SEARCH *, assuming " SSDP_ST_ALL);
 				type = SSDP_ST_ALL;
-				send_message(sd, type, &sa, salen);
+				send_message(entry, type, &sa, salen);
 				return;
 			}
 
@@ -424,7 +445,7 @@ static void ssdp_recv(int sd)
 				if (!strcmp(supported_types[i], type)) {
 					logit(LOG_DEBUG, "M-SEARCH * ST: %s from %s port %d", type,
 					      inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
-					send_message(sd, type, &sa, salen);
+					send_message(entry, type, &sa, salen);
 					return;
 				}
 			}
@@ -435,12 +456,95 @@ static void ssdp_recv(int sd)
 	}
 }
 
+static int multicast_init(void)
+{
+	int sd;
+	struct sockaddr sa;
+	struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
+
+	sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+	if (sd < 0) {
+		logit(LOG_ERR, "Failed opening multicast socket: %s", strerror(errno));
+		return -1;
+	}
+
+	memset(&sa, 0, sizeof(sa));
+	sin->sin_family = AF_INET;
+	sin->sin_addr.s_addr = inet_addr(MC_SSDP_GROUP);
+	sin->sin_port = htons(MC_SSDP_PORT);
+
+	if (bind(sd, &sa, sizeof(*sin)) < 0) {
+		close(sd);
+		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(sin->sin_addr), MC_SSDP_PORT, strerror(errno));
+		return -1;
+	}
+
+	register_socket(sd, -1, &sa, NULL, ssdp_recv);
+
+	return sd;
+}
+
+static int multicast_join(int sd, struct sockaddr *sa)
+{
+	struct ip_mreqn mreq;
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+
+	memset(&mreq, 0, sizeof(mreq));
+	mreq.imr_address = sin->sin_addr;
+	mreq.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
+        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))) {
+		logit(LOG_ERR, "Failed joining group %s: %s", MC_SSDP_GROUP, strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+ * Should be called on each NOTIFY interval in case new host addresses
+ * XXX: Add mark-and-sweep to be able to prune removed host addresses.
+ */
+static void ssdp_init(int in)
+{
+	size_t i;
+	struct ifaddrs *ifaddrs, *ifa;
+
+	if (getifaddrs(&ifaddrs) < 0) {
+		logit(LOG_ERR, "Failed getifaddrs(): %s", strerror(errno));
+		return;
+	}
+
+	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
+		int sd;
+
+		/* XXX: Add interface filtering here, optional command line argument */
+//		if (filter_iface(ifa->ifa_name))
+//			continue;
+
+		if (filter_addr(ifa->ifa_addr))
+			continue;
+
+		sd = open_socket(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT);
+		if (sd < 0)
+			continue;
+
+		multicast_join(in, ifa->ifa_addr);
+
+		if (register_socket(in, sd, ifa->ifa_addr, ifa->ifa_netmask, ssdp_recv)) {
+			close(sd);
+			break;
+		}
+	}
+
+	freeifaddrs(ifaddrs);
+}
+
 static void handle_message(int sd)
 {
 	struct ifsock *entry;
 
 	LIST_FOREACH(entry, &il, link) {
-		if (entry->sd != sd)
+		if (entry->in != sd)
 			continue;
 
 		if (entry->cb)
@@ -457,7 +561,10 @@ static void wait_message(uint8_t interval)
 	struct ifsock *entry;
 
 	LIST_FOREACH(entry, &il, link) {
-		pfd[ifnum].fd = entry->sd;
+		if (entry->out != -1)
+			continue;
+
+		pfd[ifnum].fd = entry->in;
 		pfd[ifnum].events = POLLIN | POLLHUP;
 		ifnum++;
 	}
@@ -493,16 +600,13 @@ static void announce(void)
 	LIST_FOREACH(entry, &il, link) {
 		size_t i;
 
-		if (!entry->ifname)
-			continue;
-
-//		send_search(entry->sd, "upnp:rootdevice");
+//		send_search(entry, "upnp:rootdevice");
 		for (i = 0; supported_types[i]; i++) {
 			/* UUID sent in SSDP_ST_ALL, first announce */
 			if (!strcmp(supported_types[i], uuid))
 				continue;
 
-			send_message(entry->sd, supported_types[i], NULL, 0);
+			send_message(entry, supported_types[i], NULL, 0);
 		}
 	}
 }
@@ -598,7 +702,7 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-dhv] [-i SEC] IFACE [IFACE ...]\n"
+	printf("Usage: %s [-dhv] [-i SEC] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
@@ -612,7 +716,7 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
-	int i, c;
+	int i, c, sd;
 	int log_level = LOG_NOTICE;
 	int log_opts = LOG_CONS | LOG_PID;
 	int interval = NOTIFY_INTERVAL;
@@ -641,11 +745,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (optind >= argc) {
-		warnx("Not enough arguments");
-		return usage(1);
-	}
-
 	signal_init();
 
         if (debug) {
@@ -659,9 +758,12 @@ int main(int argc, char *argv[])
 	uuidgen();
 	lsb_init();
 
-	for (i = optind; i < argc; i++)
-		open_ssdp_socket(argv[i]);
-	open_web_socket(NULL);
+	sd = multicast_init();
+	if (sd < 0)
+		errx(1, "No multicast");
+
+	ssdp_init(sd);
+	web_init();
 
 	announce();
 	while (running) {

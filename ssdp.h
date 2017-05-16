@@ -26,7 +26,7 @@
 #define MAX_PKT_SIZE         512
 #define MC_SSDP_GROUP        "239.255.255.250"
 #define MC_SSDP_PORT         1900
-#define LOCATION_PORT        MC_SSDP_PORT
+#define LOCATION_PORT        (MC_SSDP_PORT + 1)
 #define LOCATION_DESC        "/description.xml"
 
 #define SSDP_ST_ALL          "ssdp:all"
@@ -42,5 +42,8 @@
 
 extern int debug;
 extern char uuid[];
+
+void web_init(void);
+int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
 
 #endif /* SSDP_H_ */

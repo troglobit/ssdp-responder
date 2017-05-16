@@ -51,7 +51,6 @@ const char *xml =
 	"</root>\r\n"
 	"\r\n";
 
-void register_socket(int sd, char *ifname, void (*cb)(int sd));
 
 /* Peek into SOCK_STREAM on accepted client socket to figure out inbound interface */
 static struct sockaddr_in *stream_peek(int sd, char *ifname)
@@ -88,7 +87,7 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname)
         return &sin;
 }
 
-void respond(int sd, struct sockaddr_in *sin, socklen_t len)
+static void respond(int sd, struct sockaddr_in *sin, socklen_t len)
 {
 	char *head = "HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/xml\r\n"
@@ -165,7 +164,7 @@ void web_recv(int sd)
 	close(client);
 }
 
-void open_web_socket(char *ifname)
+void web_init(void)
 {
 	int sd;
 	struct sockaddr sa;
@@ -192,7 +191,7 @@ void open_web_socket(char *ifname)
 	if (listen(sd, 10) != 0)
 		err(1, "Failed setting web listen backlog");
 
-	register_socket(sd, ifname, web_recv);
+	register_socket(sd, -1, &sa, NULL, web_recv);
 }
 
 /**
