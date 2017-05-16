@@ -445,10 +445,10 @@ static void ssdp_recv(int sd)
 
 			entry = find_outbound(&sa);
 			if (!entry) {
-				logit(LOG_INFO, "No matching socket for client %s", inet_ntoa(sin->sin_addr));
+				logit(LOG_DEBUG, "No matching socket for client %s", inet_ntoa(sin->sin_addr));
 				return;
 			}
-			logit(LOG_INFO, "Matching socket for client %s", inet_ntoa(sin->sin_addr));
+			logit(LOG_DEBUG, "Matching socket for client %s", inet_ntoa(sin->sin_addr));
 
 			type = strcasestr(buf, "\r\nST:");
 			if (!type) {
@@ -651,7 +651,6 @@ static void wait_message(uint8_t interval)
 		ifnum++;
 	}
 
-again:
 	while (1) {
 		size_t i;
 
