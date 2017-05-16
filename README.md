@@ -1,6 +1,12 @@
 [![License Badge][]][License] [![Travis Status][]][Travis]
 
-Prototype micro SSDP responder for networked devices.
+Micro SSDP responder for networked devices.  Useful for embedded systems
+that want to announce themselves to Windows clients.
+
+`ssdpd` is a stand-alone UNIX daemon with a built-in web server for
+serving the XML description.  By default it announces itself as an
+InternetGatewayDevice.  See the `configure` script for some options.
+
 
 Usage
 -----
@@ -15,6 +21,7 @@ Usage: ssdpd [-dhv] [-i SEC] IFACE [IFACE ...]
 
 Bug report address: https://github.com/troglobit/ssdp-responder/issues
 ```
+
 
 Origin
 ------
