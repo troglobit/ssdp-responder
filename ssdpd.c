@@ -44,6 +44,7 @@ struct ifsock {
 	LIST_ENTRY(ifsock) link;
 
 	int stale;
+	int mod;
 
 	/*
 	 * Sockets for inbound and outbound
@@ -131,6 +132,7 @@ int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mas
 
 	entry->in   = in;
 	entry->out  = out;
+	entry->mod  = 1;
 	entry->cb   = cb;
 	entry->addr = *address;
 	if (mask)
@@ -545,34 +547,41 @@ static void mark(void)
 	}
 }
 
-static void sweep(void)
+static int sweep(void)
 {
+	int modified = 0;
 	struct ifsock *entry, *tmp;
 
 	LIST_FOREACH_SAFE(entry, &il, link, tmp) {
 		if (!entry->stale)
 			continue;
 
+		modified++;
 		logit(LOG_DEBUG, "Removing stale entry %s", inet_ntoa(entry->addr.sin_addr));
 
 		LIST_REMOVE(entry, link);
 		close(entry->out);
 		free(entry);
 	}
+
+	return modified;
 }
 
 /*
  * Should be called on each NOTIFY interval in case new host addresses
  * XXX: Add mark-and-sweep to be able to prune removed host addresses.
  */
-static void ssdp_init(int in, char *iflist[], size_t num)
+static int ssdp_init(int in, char *iflist[], size_t num)
 {
+	int modified;
 	size_t i;
 	struct ifaddrs *ifaddrs, *ifa;
 
+	logit(LOG_INFO, "Updating interfaces ...");
+
 	if (getifaddrs(&ifaddrs) < 0) {
 		logit(LOG_ERR, "Failed getifaddrs(): %s", strerror(errno));
-		return;
+		return -1;
 	}
 
 	/* Mark all outbound interfaces as stale */
@@ -591,7 +600,7 @@ static void ssdp_init(int in, char *iflist[], size_t num)
 	}
 
 	/* Clean out any stale interface addresses */
-	sweep();
+	modified = sweep();
 
 	/* Second pass, add new ones */
 	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
@@ -617,9 +626,12 @@ static void ssdp_init(int in, char *iflist[], size_t num)
 			close(sd);
 			break;
 		}
+		modified++;
 	}
 
 	freeifaddrs(ifaddrs);
+
+	return modified;
 }
 
 static void handle_message(int sd)
@@ -679,12 +691,18 @@ static void wait_message(time_t tmo) //uint8_t interval)
 	}
 }
 
-static void announce(void)
+static void announce(int mod)
 {
 	struct ifsock *entry;
 
+	logit(LOG_INFO, "Sending SSDP NOTIFY new:%d ...", mod);
+
 	LIST_FOREACH(entry, &il, link) {
 		size_t i;
+
+		if (mod && !entry->mod)
+			continue;
+		entry->mod = 0;
 
 //		send_search(entry, "upnp:rootdevice");
 		for (i = 0; supported_types[i]; i++) {
@@ -863,14 +881,13 @@ int main(int argc, char *argv[])
 	now = time(NULL);
 	while (running) {
 		if (rtmo < now) {
-			logit(LOG_INFO, "Updating interfaces ...");
-			ssdp_init(sd, &argv[optind], argc - optind);
+			if (ssdp_init(sd, &argv[optind], argc - optind) > 0)
+				announce(1);
 			rtmo = now + refresh;
 		}
 
 		if (itmo < now) {
-			logit(LOG_INFO, "Sending SSDP NOTIFY ...");
-			announce();
+			announce(0);
 			itmo = now + interval;
 		}
 
