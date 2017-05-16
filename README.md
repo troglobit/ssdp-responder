@@ -17,9 +17,23 @@ Usage: ssdpd [-dhv] [-i SEC] [IFACE [IFACE ...]]
     -d        Developer debug mode
     -h        This help text
     -i SEC    SSDP notify interval, default 600 sec
+    -r SEC    Interface refresh interval, default 600 sec
     -v        Show program version
 
 Bug report address: https://github.com/troglobit/ssdp-responder/issues
+```
+
+
+Example
+-------
+
+The following example runs `ssdpd` only on interface `eth1`.  Every five
+seconds the list of addresses for that interface are updated, if any new
+address is added a new set of `NOTIFY *` messages are sent, otherwise
+they are sent every 30 seconds.
+
+```
+ssdpd -i 30 -r 5 eth1
 ```
 
 
