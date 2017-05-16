@@ -23,7 +23,7 @@ script:
   - make clean
   - make -j5
   - DESTDIR=~/tmp make install-strip
-  - tree ~/tmp
+  - tree -h ~/tmp
   - ldd ~/tmp/sbin/ssdpd
   - size ~/tmp/sbin/ssdpd
   - ~/tmp/sbin/ssdpd -h
