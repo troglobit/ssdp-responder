@@ -5,6 +5,11 @@ language: c
 # We don't need to install packages, use dockerized build, quicker
 sudo: false
 
+# Test build with both GCC and Clang (LLVM)
+compiler:
+  - gcc
+  - clang
+
 # We don't store generated files (configure and Makefile) in GIT,
 # so we must customize the default build script to run ./autogen.sh
 script:
