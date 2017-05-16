@@ -244,6 +244,20 @@ static int filter_addr(struct sockaddr *sa)
 	return 0;
 }
 
+static int filter_iface(char *ifname, char *iflist[], size_t num)
+{
+	size_t i;
+
+	logit(LOG_DEBUG, "Filter %s?  Comparing %zd entries ...", ifname, num);
+	for (i = 0; i < num; i++) {
+		logit(LOG_DEBUG, "Filter %s?  Comparing with %s ...", ifname, iflist[i]);
+		if (!strcmp(ifname, iflist[i]))
+			return 0;
+	}
+
+	return 1;
+}
+
 static void compose_addr(struct sockaddr_in *sin, char *group, int port)
 {
 	memset(sin, 0, sizeof(*sin));
@@ -550,7 +564,7 @@ static void sweep(void)
  * Should be called on each NOTIFY interval in case new host addresses
  * XXX: Add mark-and-sweep to be able to prune removed host addresses.
  */
-static void ssdp_init(int in)
+static void ssdp_init(int in, char *iflist[], size_t num)
 {
 	size_t i;
 	struct ifaddrs *ifaddrs, *ifa;
@@ -582,9 +596,11 @@ static void ssdp_init(int in)
 	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
 		int sd;
 
-		/* XXX: Add interface filtering here, optional command line argument */
-//		if (filter_iface(ifa->ifa_name))
-//			continue;
+		/* Interface filtering, optional command line argument */
+		if (filter_iface(ifa->ifa_name, iflist, num)) {
+			logit(LOG_DEBUG, "Skipping %s, not in iflist.", ifa->ifa_name);
+			continue;
+		}
 
 		/* Do we have another in the same subnet? */
 		if (filter_addr(ifa->ifa_addr))
@@ -828,14 +844,14 @@ int main(int argc, char *argv[])
 	if (sd < 0)
 		errx(1, "No multicast");
 
-	ssdp_init(sd);
+	ssdp_init(sd, &argv[optind], argc - optind);
 	web_init();
 
 	announce();
 	while (running) {
 		announce();
 		wait_message(interval);
-		ssdp_init(sd);
+		ssdp_init(sd, &argv[optind], argc - optind);
 	}
 
 	closelog();
