@@ -75,17 +75,14 @@ char hostname[64];
 char *os = NULL, *ver = NULL;
 char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 
-
-static struct ifsock *find_by_host(struct sockaddr *sa)
+/* Find interface in same subnet as sa */
+static struct ifsock *find_outbound(struct sockaddr *sa)
 {
-	char host[32];
 	in_addr_t cand;
 	struct ifsock *entry;
 	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
 
 	cand = addr->sin_addr.s_addr;
-	snprintf(host, sizeof(host), "%s", inet_ntoa(addr->sin_addr));
-
 	LIST_FOREACH(entry, &il, link) {
 		in_addr_t a, m;
 
@@ -220,7 +217,7 @@ static int filter_addr(struct sockaddr *sa)
 	if (sin->sin_addr.s_addr == htonl(INADDR_LOOPBACK))
 		return 1;
 
-	entry = find_by_host(sa);
+	entry = find_outbound(sa);
 	if (entry) {
 		if (entry->addr.sin_addr.s_addr != htonl(INADDR_ANY))
 			return 1;
@@ -414,7 +411,7 @@ static void ssdp_recv(int sd)
 			/* Set source port as destination in our reply */
 //			sin->sin_port = uh->source;
 
-			entry = find_by_host(&sa);
+			entry = find_outbound(&sa);
 			if (!entry) {
 				logit(LOG_INFO, "No matching socket for client %s", inet_ntoa(sin->sin_addr));
 				return;
