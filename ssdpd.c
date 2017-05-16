@@ -34,6 +34,7 @@
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
+#include <sys/param.h>		/* MIN() */
 #include <sys/socket.h>
 
 #include "ssdp.h"
@@ -634,11 +635,11 @@ static void handle_message(int sd)
 	}
 }
 
-static void wait_message(uint8_t interval)
+static void wait_message(time_t tmo) //uint8_t interval)
 {
-	int num = 1;
+	int num = 1, timeout;
 	size_t ifnum = 0;
-	time_t end = time(NULL) + interval;
+//	time_t end = time(NULL) + interval;
 	struct pollfd pfd[MAX_NUM_IFACES];
 	struct ifsock *entry;
 
@@ -654,7 +655,11 @@ static void wait_message(uint8_t interval)
 	while (1) {
 		size_t i;
 
-		num = poll(pfd, ifnum, (end - time(NULL)) * 1000);
+		timeout = tmo - time(NULL);
+		if (timeout < 0)
+			break;
+
+		num = poll(pfd, ifnum, timeout * 1000); //(end - time(NULL)) * 1000);
 		if (num < 0) {
 			if (EINTR == errno)
 				break;
@@ -788,9 +793,10 @@ static int usage(int code)
 	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval, default %d sec\n"
+	       "    -r SEC    Interface refresh interval, default %d sec\n"
 	       "    -v        Show program version\n"
 	       "\n"
-	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, PACKAGE_BUGREPORT);
+	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, NOTIFY_INTERVAL, PACKAGE_BUGREPORT);
 
 	return code;
 }
@@ -801,8 +807,10 @@ int main(int argc, char *argv[])
 	int log_level = LOG_NOTICE;
 	int log_opts = LOG_CONS | LOG_PID;
 	int interval = NOTIFY_INTERVAL;
+	int refresh = NOTIFY_INTERVAL;
+	time_t now, rtmo = 0, itmo = 0;
 
-	while ((c = getopt(argc, argv, "dhi:v")) != EOF) {
+	while ((c = getopt(argc, argv, "dhi:r:v")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -815,6 +823,12 @@ int main(int argc, char *argv[])
 			interval = atoi(optarg);
 			if (interval < 30)
 				errx(1, "Too low announcement interval.");
+			break;
+
+		case 'r':
+			refresh = atoi(optarg);
+			if (refresh < 5)
+				errx(1, "Too low refresh interval.");
 			break;
 
 		case 'v':
@@ -846,11 +860,22 @@ int main(int argc, char *argv[])
 	ssdp_init(sd, &argv[optind], argc - optind);
 	web_init();
 
-	announce();
+	now = time(NULL);
 	while (running) {
-		announce();
-		wait_message(interval);
-		ssdp_init(sd, &argv[optind], argc - optind);
+		if (rtmo < now) {
+			logit(LOG_INFO, "Updating interfaces ...");
+			ssdp_init(sd, &argv[optind], argc - optind);
+			rtmo = now + refresh;
+		}
+
+		if (itmo < now) {
+			logit(LOG_INFO, "Sending SSDP NOTIFY ...");
+			announce();
+			itmo = now + interval;
+		}
+
+		wait_message(MIN(rtmo, itmo));
+		now = time(NULL);
 	}
 
 	closelog();
