@@ -865,16 +865,15 @@ int main(int argc, char *argv[])
 
 	uuidgen();
 	lsb_init();
+	web_init();
 
 	sd = multicast_init();
 	if (sd < 0)
 		err(1, "Failed creating multicast socket");
 
-	ssdp_init(sd, &argv[optind], argc - optind);
-	web_init();
-
-	now = time(NULL);
 	while (running) {
+		now = time(NULL);
+
 		if (rtmo < now) {
 			if (ssdp_init(sd, &argv[optind], argc - optind) > 0)
 				announce(1);
@@ -887,7 +886,6 @@ int main(int argc, char *argv[])
 		}
 
 		wait_message(MIN(rtmo, itmo));
-		now = time(NULL);
 	}
 
 	closelog();
