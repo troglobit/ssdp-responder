@@ -874,13 +874,13 @@ int main(int argc, char *argv[])
 	while (running) {
 		now = time(NULL);
 
-		if (rtmo < now) {
+		if (rtmo <= now) {
 			if (ssdp_init(sd, &argv[optind], argc - optind) > 0)
 				announce(1);
 			rtmo = now + refresh;
 		}
 
-		if (itmo < now) {
+		if (itmo <= now) {
 			announce(0);
 			itmo = now + interval;
 		}
