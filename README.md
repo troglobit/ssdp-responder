@@ -1,7 +1,8 @@
 [![License Badge][]][License] [![Travis Status][]][Travis]
 
-Micro SSDP responder for networked devices.  Useful for embedded systems
-that want to announce themselves to Windows clients.
+Simple Service Discovery Protocol daemon (SSDP) for networked Linux
+devices.  Useful for small and embedded systems that want to announce
+themselves to Windows clients.
 
 `ssdpd` is a stand-alone UNIX daemon with a built-in web server for
 serving the XML description.  By default it announces itself as an
