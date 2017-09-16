@@ -2,11 +2,14 @@
 
 Simple Service Discovery Protocol daemon (SSDP) for networked Linux
 devices.  Useful for small and embedded systems that want to announce
-themselves to Windows clients.
+themselves to systems running Windows.
 
-`ssdpd` is a stand-alone UNIX daemon with a built-in web server for
-serving the XML description.  By default it announces itself as an
-InternetGatewayDevice.  See the `configure` script for some options.
+`ssdpd` is a stand-alone UNIX daemon with no external dependencies but
+the standard C library.  It has a built-in web server for serving the
+UPnP XML description which Windows use to present the icon, by default
+an InternetGatewayDevice is announced.
+
+See the `configure` script for some options.
 
 
 Usage
