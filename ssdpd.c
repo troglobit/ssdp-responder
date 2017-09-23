@@ -805,8 +805,8 @@ static int usage(int code)
 	       "\n"
 	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
-	       "    -i SEC    SSDP notify interval, default %d sec\n"
-	       "    -r SEC    Interface refresh interval, default %d sec\n"
+	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
+	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -v        Show program version\n"
 	       "\n"
 	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, NOTIFY_INTERVAL, PACKAGE_BUGREPORT);
@@ -834,14 +834,14 @@ int main(int argc, char *argv[])
 
 		case 'i':
 			interval = atoi(optarg);
-			if (interval < 30)
-				errx(1, "Too low announcement interval.");
+			if (interval < 30 || interval > 900)
+				errx(1, "Invalid announcement interval (30-900).");
 			break;
 
 		case 'r':
 			refresh = atoi(optarg);
-			if (refresh < 5)
-				errx(1, "Too low refresh interval.");
+			if (refresh < 5 || refresh > 1800)
+				errx(1, "Invalid refresh interval (5-1800).");
 			break;
 
 		case 'v':
