@@ -809,7 +809,7 @@ static int usage(int code)
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -v        Show program version\n"
 	       "\n"
-	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, NOTIFY_INTERVAL, PACKAGE_BUGREPORT);
+	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, REFRESH_INTERVAL, PACKAGE_BUGREPORT);
 
 	return code;
 }
@@ -820,7 +820,7 @@ int main(int argc, char *argv[])
 	int log_level = LOG_NOTICE;
 	int log_opts = LOG_CONS | LOG_PID;
 	int interval = NOTIFY_INTERVAL;
-	int refresh = NOTIFY_INTERVAL;
+	int refresh = REFRESH_INTERVAL;
 	time_t now, rtmo = 0, itmo = 0;
 
 	while ((c = getopt(argc, argv, "dhi:r:v")) != EOF) {

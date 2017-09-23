@@ -20,7 +20,7 @@ Usage: ssdpd [-dhv] [-i SEC] [IFACE [IFACE ...]]
 
     -d        Developer debug mode
     -h        This help text
-    -i SEC    SSDP notify interval (30-900), default 600 sec
+    -i SEC    SSDP notify interval (30-900), default 300 sec
     -r SEC    Interface refresh interval (5-1800), default 600 sec
     -v        Show program version
 

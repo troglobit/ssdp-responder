@@ -20,7 +20,8 @@
 #include <syslog.h>
 
 /* Notify should be less than half the cache timeout */
-#define NOTIFY_INTERVAL      600
+#define NOTIFY_INTERVAL      300
+#define REFRESH_INTERVAL     600
 #define CACHE_TIMEOUT        1800
 #define MAX_NUM_IFACES       100
 #define MAX_PKT_SIZE         512
