@@ -31,13 +31,13 @@ See `configure --help` for some build time options.
 Example
 -------
 
-The following example runs `ssdpd` only on interface `eth1`.  Every five
-seconds the list of addresses for that interface are updated, if any new
-address is added a new set of `NOTIFY *` messages are sent, otherwise
-they are sent every 30 seconds.
+The following example assumes the system `eth0` interface is connected
+to an ISP and `eth1` to the LAN.  Every 300 sec the list of addresses
+for `eth1` are updated, if a new address is added a `NOTIFY *` message
+is sent, otherwise `NOTIFY *` messages are sent every 30 seconds.
 
 ```
-ssdpd -i 30 -r 5 eth1
+ssdpd -i 30 -r 300 eth1
 ```
 
 
