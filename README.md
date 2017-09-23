@@ -9,8 +9,6 @@ the standard C library.  It has a built-in web server for serving the
 UPnP XML description which Windows use to present the icon, by default
 an InternetGatewayDevice is announced.
 
-See the `configure` script for some options.
-
 
 Usage
 -----
@@ -26,6 +24,8 @@ Usage: ssdpd [-dhv] [-i SEC] [IFACE [IFACE ...]]
 
 Bug report address: https://github.com/troglobit/ssdp-responder/issues
 ```
+
+See `configure --help` for some build time options.
 
 
 Example
