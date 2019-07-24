@@ -432,13 +432,11 @@ static void ssdp_recv(int sd)
 	ssize_t len;
 	struct sockaddr sa;
 	socklen_t salen;
-	char buf[MAX_PKT_SIZE];
+	char buf[MAX_PKT_SIZE + 1];
 
 	memset(buf, 0, sizeof(buf));
-	len = recvfrom(sd, buf, sizeof(buf), MSG_DONTWAIT, &sa, &salen);
+	len = recvfrom(sd, buf, sizeof(buf) - 1, MSG_DONTWAIT, &sa, &salen);
 	if (len > 0) {
-		buf[len] = 0;
-
 		if (sa.sa_family != AF_INET)
 			return;
 
