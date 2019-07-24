@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <netdb.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,13 +91,22 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname)
 
 static void respond(int sd, struct sockaddr_in *sin)
 {
+	struct pollfd pfd = {
+		.fd = sd,
+		.events = POLLIN,
+	};
 	char *head = "HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/xml\r\n"
 		"Connection: close\r\n"
 		"\r\n";
 	char hostname[64], url[128] = "";
 	char mesg[1024], *reqline[3];
-	int rcvd, fd, bytes_read;
+	int rc, rcvd, fd, bytes_read;
+
+	/* Check for early disconnect or client timeout */
+	rc = poll(&pfd, 1, 1000);
+	if (rc <= 0)
+		goto error;
 
 	memset(mesg, 0, sizeof(mesg));
 	rcvd = recv(sd, mesg, sizeof(mesg), 0);
