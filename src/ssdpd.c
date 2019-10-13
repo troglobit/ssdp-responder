@@ -872,6 +872,7 @@ int main(int argc, char *argv[])
 	if (sd < 0)
 		err(1, "Failed creating multicast socket");
 
+	pidfile(PACKAGE_NAME);
 	while (running) {
 		now = time(NULL);
 
