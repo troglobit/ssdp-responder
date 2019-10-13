@@ -1,9 +1,5 @@
 #*#
-*.log
-*.o
-*.trs
 *~
-.deps
 GPATH
 GRTAGS
 GSYMS
@@ -23,6 +19,4 @@ core
 depcomp
 install-sh
 missing
-ssdpd
 stamp-h1
-test-driver
