@@ -19,6 +19,7 @@ Usage: ssdpd [-dhv] [-i SEC] [IFACE [IFACE ...]]
     -d        Developer debug mode
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
+    -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
     -v        Show program version
 
@@ -26,6 +27,9 @@ Bug report address: https://github.com/troglobit/ssdp-responder/issues
 ```
 
 See `configure --help` for some build time options.
+
+> **Note:** previous releases did *not* daemonize, you will have to
+> update your start scripts to include `-n` as of v1.6
 
 
 Example
