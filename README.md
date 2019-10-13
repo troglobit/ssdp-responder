@@ -14,13 +14,14 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-dhv] [-i SEC] [IFACE [IFACE ...]]
+Usage: ssdpd [-dhnv] [-i SEC] [-r SEC] [-t TTL ][IFACE [IFACE ...]]
 
     -d        Developer debug mode
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
     -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
+    -t TTL    TTL for multicast frames, default 2, according to the UDA
     -v        Show program version
 
 Bug report address: https://github.com/troglobit/ssdp-responder/issues

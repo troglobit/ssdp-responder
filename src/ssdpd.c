@@ -807,13 +807,14 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-dhv] [-i SEC] [IFACE [IFACE ...]]\n"
+	printf("Usage: %s [-dhv] [-i SEC] [-r SEC] [-t TTL] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
+	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
 	       "    -v        Show program version\n"
 	       "\n"
 	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, REFRESH_INTERVAL, PACKAGE_BUGREPORT);
