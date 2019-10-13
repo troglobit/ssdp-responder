@@ -10,6 +10,14 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_HEADER_STDC
 
+# Check if some func is not in libc
+AC_CHECK_LIB([util], [pidfile])
+
+# Check for usually missing API's, which we can replace
+AC_REPLACE_FUNCS([pidfile utimensat])
+AC_CONFIG_LIBOBJ_DIR([lib])
+
+# Options
 AC_ARG_WITH([vendor],
 	AS_HELP_STRING([--with-vendor=VENDOR], [Set a custom vendor string]),
 	[vendor=$withval], [vendor="Troglobit Software Systems"])
@@ -32,4 +40,5 @@ AS_IF([test "x$with_model" != "xno"], [
 		model="Generic"])])
 AC_DEFINE_UNQUOTED(MODEL, "$model", [Model name in XML])
 
+# Create all config files
 AC_OUTPUT

@@ -47,4 +47,8 @@ extern char uuid[];
 void web_init(void);
 int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
 
+#ifndef pidfile
+int     pidfile    (const char *basename);
+#endif
+
 #endif /* SSDP_H_ */
