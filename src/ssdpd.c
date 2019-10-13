@@ -817,7 +817,10 @@ static int usage(int code)
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
 	       "    -v        Show program version\n"
 	       "\n"
-	       "Bug report address: %-40s\n", PACKAGE_NAME, NOTIFY_INTERVAL, REFRESH_INTERVAL, PACKAGE_BUGREPORT);
+	       "Bug report address : %s\n", PACKAGE_NAME, NOTIFY_INTERVAL, REFRESH_INTERVAL, PACKAGE_BUGREPORT);
+#ifdef PACKAGE_URL
+        printf("Project homepage   : %s\n", PACKAGE_URL);
+#endif
 
 	return code;
 }
