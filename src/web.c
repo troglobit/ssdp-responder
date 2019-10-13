@@ -89,7 +89,7 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname)
         return &sin;
 }
 
-static void respond(int sd, struct sockaddr_in *sin)
+static int respond(int sd, struct sockaddr_in *sin)
 {
 	struct pollfd pfd = {
 		.fd = sd,
@@ -105,14 +105,17 @@ static void respond(int sd, struct sockaddr_in *sin)
 
 	/* Check for early disconnect or client timeout */
 	rc = poll(&pfd, 1, 1000);
-	if (rc <= 0)
-		goto error;
+	if (rc <= 0) {
+		if (rc == 0)
+			errno = ETIMEDOUT;
+		return -1;
+	}
 
 	memset(mesg, 0, sizeof(mesg));
 	rcvd = recv(sd, mesg, sizeof(mesg), 0);
 	if (rcvd <= 0) {
 		logit(LOG_WARNING, "web recv() error: %s", strerror(errno));
-		goto error;
+		return -1;
 	}
 
 	logit(LOG_DEBUG, "%s", mesg);
@@ -123,14 +126,14 @@ static void respond(int sd, struct sockaddr_in *sin)
 		if (strncmp(reqline[2], "HTTP/1.0", 8) != 0 && strncmp(reqline[2], "HTTP/1.1", 8) != 0) {
 			if (write(sd, "HTTP/1.1 400 Bad Request\r\n", 26) < 0)
 				logit(LOG_WARNING, "Failed returning status 400 to client: %s", strerror(errno));
-			goto error;
+			return -1;
 		}
 
 		/* XXX: Add support for icon as well */
 		if (!strstr(reqline[1], LOCATION_DESC)) {
 			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
 				logit(LOG_WARNING, "Failed returning status 404 to client: %s", strerror(errno));
-			goto error;
+			return -1;
 		}
 
 		gethostname(hostname, sizeof(hostname));
@@ -146,13 +149,13 @@ static void respond(int sd, struct sockaddr_in *sin)
 			 MODEL,
 			 uuid,
 			 inet_ntoa(sin->sin_addr));
-		if (send(sd, mesg, strlen(mesg), 0) < 0)
+		if (send(sd, mesg, strlen(mesg), 0) < 0) {
 			logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));
+			return -1;
+		}
 	}
 
-error:
-	shutdown(sd, SHUT_RDWR);
-	close(sd);
+	return 0;
 }
 
 void web_recv(int sd)
@@ -173,9 +176,10 @@ void web_recv(int sd)
 		return;
 	}
 
-	respond(client, sin);
-	shutdown(client, SHUT_RDWR);
-	close(client);
+	if (!respond(client, sin))
+		shutdown(sd, SHUT_RDWR);
+
+	close(sd);
 }
 
 void web_init(void)
