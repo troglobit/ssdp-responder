@@ -1,0 +1,13 @@
+[Unit]
+Description=Simple Service Discovery Protocol daemon (UPnP)
+Documentation=man:ssdpd
+Documentation=https://github.com/troglobit/ssdpd
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+Type=simple
+ExecStart=@SBINDIR@/ssdpd -n
+
+[Install]
+WantedBy=multi-user.target
