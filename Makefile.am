@@ -1,4 +1,5 @@
 SUBDIRS        = src
+man1_MANS      = ssdpd.1
 doc_DATA       = README.md LICENSE
 EXTRA_DIST     = README.md LICENSE
 

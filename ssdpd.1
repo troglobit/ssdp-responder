@@ -1,0 +1,53 @@
+.\"                                                              -*- nroff -*-
+.\" Copyright (c) 2017-2019  Joachim Nilsson <troglobit@gmail.com>
+.\"
+.\" Permission to use, copy, modify, and/or distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
+.Dd Oct 13, 2019
+.Dt ssdpd 1
+.Os "ssdpd (1.6)"
+.Sh NAME
+.Nm ssdpd
+.Nd Simple Service Discovery Protocol daemon
+.Sh SYNOPSIS
+.Nm
+.Op Fl dhnv
+.Op Fl i SEC
+.Op Fl r SEC
+.Op Ar IFACE Op Ar IFACE Op Ar ...
+.Sh DESCRIPTION
+Simple Service Discovery Protocol daemon (SSDP) for networked Linux
+devices.  Useful for small and embedded systems that want to announce
+themselves to systems running Windows.
+.Pp
+.Nm
+is a stand-alone UNIX daemon with no external dependencies but the
+standard C library.  It has a built-in web server for serving the UPnP
+XML description which Windows use to present the icon, by default an
+InternetGatewayDevice is announced.
+.Sh OPTIONS
+.Bl -tag -width "-r SEC " -compact
+.It Fl d
+Developer debug mode
+.It Fl h
+Show program help text
+.It Fl i Ar SEC
+SSDP notify interval (30-900), default 300 sec
+.It Fl n
+Run in foreground, do not daemonize by default
+.It Fl r Ar SEC
+Interface refresh interval (5-1800), default 600 sec
+.It Fl v
+Show program version
+.El
+.Sh AUTHORS
+.An Joachim Nilsson Aq troglobit@gmail.com
