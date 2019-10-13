@@ -1,9 +1,10 @@
-AC_INIT([ssdpd], [1.5], [https://github.com/troglobit/ssdp-responder/issues], [ssdp-responder])
+AC_INIT([ssdpd], [1.6-dev], [https://github.com/troglobit/ssdp-responder/issues],
+	[ssdp-responder], [https://github.com/troglobit/ssdp-responder])
 AM_INIT_AUTOMAKE([1.11 foreign])
 
-AC_CONFIG_SRCDIR([ssdpd.c])
+AC_CONFIG_SRCDIR([src/ssdpd.c])
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 
 AC_PROG_CC
 AC_PROG_INSTALL
