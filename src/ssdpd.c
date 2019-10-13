@@ -500,6 +500,12 @@ static int multicast_init(void)
 		return -1;
 	}
 
+	/* Allow reuse of local addresses. */
+	ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEADDR);
+#ifdef SO_REUSEPORT
+	ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
+#endif
+
 	memset(&sa, 0, sizeof(sa));
 	sin->sin_family = AF_INET;
 	sin->sin_addr.s_addr = inet_addr(MC_SSDP_GROUP);
