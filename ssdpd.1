@@ -35,6 +35,13 @@ is a stand-alone UNIX daemon with no external dependencies but the
 standard C library.  It has a built-in web server for serving the UPnP
 XML description which Windows use to present the icon, by default an
 InternetGatewayDevice is announced.
+.Pp
+.Nm
+reads
+.Pa /etc/lsb-release
+to determine the distribution name and version, which along with the
+system hostname, is periodically transmitted in SSDP multicast discovery
+frames.
 .Sh OPTIONS
 .Bl -tag -width "-r SEC " -compact
 .It Fl d
@@ -54,8 +61,13 @@ Architecture (UDA)
 Show program version
 .El
 .Sh FILES
-.Bl -tag -width /run/ssdpd.pid -compact
+.Bl -tag -width /var/lib/misc/ssdpd.cache -compact
 .It Pa /run/ssdpd.pid
+PID file, created as soon as all setup is complete
+.It Pa /etc/lsb-release
+Queried for information on the distribution name (id) and release
+.It Pa /var/lib/misc/ssdpd.cache
+Cached value of generated UUID, may be wiped by the system on reboot
 .El
 .Sh SEE ALSO
 .Xr avahi-daemon 8
