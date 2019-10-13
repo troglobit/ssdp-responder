@@ -807,6 +807,7 @@ static int usage(int code)
 	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
+	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -v        Show program version\n"
 	       "\n"
@@ -818,13 +819,14 @@ static int usage(int code)
 int main(int argc, char *argv[])
 {
 	int i, c, sd;
+	int background = 1;
 	int log_level = LOG_NOTICE;
 	int log_opts = LOG_CONS | LOG_PID;
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
 	time_t now, rtmo = 0, itmo = 0;
 
-	while ((c = getopt(argc, argv, "dhi:r:v")) != EOF) {
+	while ((c = getopt(argc, argv, "dhi:nr:v")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -837,6 +839,10 @@ int main(int argc, char *argv[])
 			interval = atoi(optarg);
 			if (interval < 30 || interval > 900)
 				errx(1, "Invalid announcement interval (30-900).");
+			break;
+
+		case 'n':
+			background = 0;
 			break;
 
 		case 'r':
@@ -859,6 +865,11 @@ int main(int argc, char *argv[])
         if (debug) {
 		log_level = LOG_DEBUG;
                 log_opts |= LOG_PERROR;
+	}
+
+	if (background) {
+		if (daemon(0, 0))
+			err(1, "Failed daemonizing");
 	}
 
         openlog(PACKAGE_NAME, log_opts, LOG_DAEMON);
