@@ -21,13 +21,14 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl dhnv
-.Op Fl i SEC
-.Op Fl r SEC
+.Op Fl i Ar SEC
+.Op Fl r Ar SEC
+.Op Fl t Ar TTL
 .Op Ar IFACE Op Ar IFACE Op Ar ...
 .Sh DESCRIPTION
 Simple Service Discovery Protocol daemon (SSDP) for networked Linux
 devices.  Useful for small and embedded systems that want to announce
-themselves to systems running Windows.
+themselves to UPnP capable systems, e.g. Windows.
 .Pp
 .Nm
 is a stand-alone UNIX daemon with no external dependencies but the
@@ -46,6 +47,9 @@ SSDP notify interval (30-900), default 300 sec
 Run in foreground, do not daemonize by default
 .It Fl r Ar SEC
 Interface refresh interval (5-1800), default 600 sec
+.It Fl t Ar TTL
+TTL for multicast frames, default 2, according to the UPnP Device
+Architecture (UDA)
 .It Fl v
 Show program version
 .El

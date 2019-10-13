@@ -145,9 +145,9 @@ int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mas
 	return 0;
 }
 
-static int open_socket(char *ifname, struct sockaddr *addr, int port)
+static int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 {
-	int sd, val, rc;
+	int sd, rc;
 	char loop;
 	struct ip_mreqn mreq;
 	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
@@ -179,8 +179,7 @@ static int open_socket(char *ifname, struct sockaddr *addr, int port)
 		return -1;
 	}
 
-	val = 2;		/* Default 2, but should be configurable */
-	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &val, sizeof(val));
+	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
 	if (rc < 0) {
 		close(sd);
 		logit(LOG_ERR, "Failed setting multicast TTL: %s", strerror(errno));
@@ -573,7 +572,7 @@ static int sweep(void)
 	return modified;
 }
 
-static int ssdp_init(int in, char *iflist[], size_t num)
+static int ssdp_init(int in, int ttl, char *iflist[], size_t num)
 {
 	int modified;
 	size_t i;
@@ -618,7 +617,7 @@ static int ssdp_init(int in, char *iflist[], size_t num)
 		if (filter_addr(ifa->ifa_addr))
 			continue;
 
-		sd = open_socket(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT);
+		sd = open_socket(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT, ttl);
 		if (sd < 0)
 			continue;
 
@@ -830,9 +829,10 @@ int main(int argc, char *argv[])
 	int log_opts = LOG_CONS | LOG_PID;
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
+	int ttl = MC_TTL_DEFAULT;
 	time_t now, rtmo = 0, itmo = 0;
 
-	while ((c = getopt(argc, argv, "dhi:nr:v")) != EOF) {
+	while ((c = getopt(argc, argv, "dhi:nr:t:v")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -855,6 +855,12 @@ int main(int argc, char *argv[])
 			refresh = atoi(optarg);
 			if (refresh < 5 || refresh > 1800)
 				errx(1, "Invalid refresh interval (5-1800).");
+			break;
+
+		case 't':
+			ttl = atoi(optarg);
+			if (ttl < 1 || ttl > 255)
+				errx(1, "Invalid TTL (1-255).");
 			break;
 
 		case 'v':
@@ -894,7 +900,7 @@ int main(int argc, char *argv[])
 		now = time(NULL);
 
 		if (rtmo <= now) {
-			if (ssdp_init(sd, &argv[optind], argc - optind) > 0)
+			if (ssdp_init(sd, ttl, &argv[optind], argc - optind) > 0)
 				announce(1);
 			rtmo = now + refresh;
 		}

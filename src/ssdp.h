@@ -27,6 +27,7 @@
 #define MAX_PKT_SIZE         2000
 #define MC_SSDP_GROUP        "239.255.255.250"
 #define MC_SSDP_PORT         1900
+#define MC_TTL_DEFAULT       2
 #define LOCATION_PORT        (MC_SSDP_PORT + 1)
 #define LOCATION_DESC        "/description.xml"
 
