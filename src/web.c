@@ -177,9 +177,9 @@ void web_recv(int sd)
 	}
 
 	if (!respond(client, sin))
-		shutdown(sd, SHUT_RDWR);
+		shutdown(client, SHUT_RDWR);
 
-	close(sd);
+	close(client);
 }
 
 void web_init(void)
