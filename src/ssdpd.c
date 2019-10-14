@@ -660,7 +660,7 @@ static void wait_message(time_t tmo)
 			continue;
 
 		pfd[ifnum].fd = ifs->in;
-		pfd[ifnum].events = POLLIN | POLLHUP;
+		pfd[ifnum].events = POLLIN;
 		ifnum++;
 	}
 
@@ -683,6 +683,10 @@ static void wait_message(time_t tmo)
 			break;
 
 		for (i = 0; num > 0 && i < ifnum; i++) {
+			if (pfd[i].revents & POLLNVAL ||
+			    pfd[i].revents & POLLHUP)
+				return;
+
 			if (pfd[i].revents & POLLIN) {
 				handle_message(pfd[i].fd);
 				num--;
