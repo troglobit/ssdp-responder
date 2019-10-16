@@ -164,12 +164,12 @@ static int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(address->sin_addr), port, strerror(errno));
 		return -1;
 	}
-#if 0
+
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEADDR);
 #ifdef SO_REUSEPORT
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
 #endif
-#endif
+
 	memset(&mreq, 0, sizeof(mreq));
 	mreq.imr_address = address->sin_addr;
 	mreq.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
