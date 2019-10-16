@@ -114,7 +114,8 @@ static int respond(int sd, struct sockaddr_in *sin)
 	memset(mesg, 0, sizeof(mesg));
 	rcvd = recv(sd, mesg, sizeof(mesg), 0);
 	if (rcvd <= 0) {
-		logit(LOG_WARNING, "web recv() error: %s", strerror(errno));
+		if (rcvd == -1)
+			logit(LOG_WARNING, "web recv() error: %s", strerror(errno));
 		return -1;
 	}
 
