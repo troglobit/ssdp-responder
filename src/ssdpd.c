@@ -487,40 +487,6 @@ static void ssdp_recv(int sd)
 	}
 }
 
-static int multicast_init(void)
-{
-	int sd;
-	struct sockaddr sa;
-	struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
-
-	sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-	if (sd < 0) {
-		logit(LOG_ERR, "Failed opening multicast socket: %s", strerror(errno));
-		return -1;
-	}
-
-	/* Allow reuse of local addresses. */
-	ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEADDR);
-#ifdef SO_REUSEPORT
-	ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
-#endif
-
-	memset(&sa, 0, sizeof(sa));
-	sin->sin_family = AF_INET;
-	sin->sin_addr.s_addr = inet_addr(MC_SSDP_GROUP);
-	sin->sin_port = htons(MC_SSDP_PORT);
-
-	if (bind(sd, &sa, sizeof(*sin)) < 0) {
-		close(sd);
-		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(sin->sin_addr), MC_SSDP_PORT, strerror(errno));
-		return -1;
-	}
-
-	register_socket(sd, -1, &sa, NULL, ssdp_recv);
-
-	return sd;
-}
-
 static int multicast_join(int sd, struct sockaddr *sa)
 {
 	struct ip_mreqn mreq;
@@ -572,7 +538,7 @@ static int sweep(void)
 	return modified;
 }
 
-static int ssdp_init(int in, int ttl, char *iflist[], size_t num)
+static int ssdp_init(int ttl, char *iflist[], size_t num)
 {
 	int modified;
 	size_t i;
@@ -621,12 +587,14 @@ static int ssdp_init(int in, int ttl, char *iflist[], size_t num)
 		if (sd < 0)
 			continue;
 
-		multicast_join(in, ifa->ifa_addr);
+		if (!multicast_join(sd, ifa->ifa_addr))
+			logit(LOG_DEBUG, "Joined group %s on interface %s", MC_SSDP_GROUP, ifa->ifa_name);
 
-		if (register_socket(in, sd, ifa->ifa_addr, ifa->ifa_netmask, ssdp_recv)) {
+		if (register_socket(sd, sd, ifa->ifa_addr, ifa->ifa_netmask, ssdp_recv)) {
 			close(sd);
 			break;
 		}
+		logit(LOG_DEBUG, "Registered socket %d with ssd_recv() callback", sd);
 		modified++;
 	}
 
@@ -656,9 +624,6 @@ static void wait_message(time_t tmo)
 	struct ifsock *ifs;
 
 	LIST_FOREACH(ifs, &il, link) {
-		if (ifs->out != -1)
-			continue;
-
 		pfd[ifnum].fd = ifs->in;
 		pfd[ifnum].events = POLLIN;
 		ifnum++;
@@ -831,7 +796,7 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
-	int i, c, sd;
+	int i, c;
 	int background = 1;
 	int log_level = LOG_NOTICE;
 	int log_opts = LOG_CONS | LOG_PID;
@@ -898,17 +863,13 @@ int main(int argc, char *argv[])
 	uuidgen();
 	lsb_init();
 	web_init();
-
-	sd = multicast_init();
-	if (sd < 0)
-		err(1, "Failed creating multicast socket");
-
 	pidfile(PACKAGE_NAME);
+
 	while (running) {
 		now = time(NULL);
 
 		if (rtmo <= now) {
-			if (ssdp_init(sd, ttl, &argv[optind], argc - optind) > 0)
+			if (ssdp_init(ttl, &argv[optind], argc - optind) > 0)
 				announce(1);
 			rtmo = now + refresh;
 		}
