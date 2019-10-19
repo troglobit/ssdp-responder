@@ -15,28 +15,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
-#include <config.h>
-#include <ctype.h>
-#include <err.h>
-#include <errno.h>
-#include <getopt.h>
-#include <ifaddrs.h>
-#include <netdb.h>
-#include <paths.h>
-#include <poll.h>
-#include <stdio.h>
-#include <signal.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-#include <sys/param.h>		/* MIN() */
-#include <sys/socket.h>
-
 #include "ssdp.h"
 #include "queue.h"
 
@@ -313,20 +291,6 @@ static void compose_response(char *type, char *host, char *buf, size_t len)
 		 CACHE_TIMEOUT);
 }
 
-static void compose_search(char *type, char *buf, size_t len)
-{
-	snprintf(buf, len, "M-SEARCH * HTTP/1.1\r\n"
-		 "Host: %s:%d\r\n"
-		 "MAN: \"ssdp:discover\"\r\n"
-		 "MX: 1\r\n"
-		 "ST: %s\r\n"
-		 "User-Agent: %s\r\n"
-		 "\r\n",
-		 MC_SSDP_GROUP, MC_SSDP_PORT,
-		 type,
-		 server_string);
-}
-
 static void compose_notify(char *type, char *host, char *buf, size_t len)
 {
 	char usn[256];
@@ -365,22 +329,6 @@ size_t pktlen(unsigned char *buf)
 	size_t hdr = sizeof(struct udphdr);
 
 	return strlen((char *)buf + hdr) + hdr;
-}
-
-static void send_search(struct ifsock *ifs, char *type)
-{
-	ssize_t num;
-	char buf[MAX_PKT_SIZE];
-	struct sockaddr dest;
-
-	memset(buf, 0, sizeof(buf));
-	compose_search(type, buf, sizeof(buf));
-	compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
-
-	logit(LOG_DEBUG, "Sending M-SEARCH ...");
-	num = sendto(ifs->out, buf, strlen(buf), 0, &dest, sizeof(struct sockaddr_in));
-	if (num < 0)
-		logit(LOG_WARNING, "Failed sending SSDP M-SEARCH");
 }
 
 static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)

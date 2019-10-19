@@ -17,6 +17,27 @@
 #ifndef SSDP_H_
 #define SSDP_H_
 
+#include <config.h>
+#include <ctype.h>
+#include <err.h>
+#include <errno.h>
+#include <getopt.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+#include <paths.h>
+#include <poll.h>
+#include <stdio.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/ip.h>
+#include <netinet/udp.h>
+#include <sys/param.h>		/* MIN() */
+#include <sys/socket.h>
 #include <syslog.h>
 
 /* Notify should be less than half the cache timeout */
