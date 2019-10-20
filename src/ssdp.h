@@ -63,6 +63,11 @@
 			warn("Failed enabling %s", #opt);		\
         } while (0);
 
+/* From The Practice of Programming, by Kernighan and Pike */
+#ifndef NELEMS
+#define NELEMS(array) (sizeof(array) / sizeof(array[0]))
+#endif
+
 extern int debug;
 extern char uuid[];
 
