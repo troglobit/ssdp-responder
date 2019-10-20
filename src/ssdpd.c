@@ -720,6 +720,7 @@ static void signal_init(void)
 	signal(SIGINT,  exit_handler);
 	signal(SIGHUP,  exit_handler);
 	signal(SIGQUIT, exit_handler);
+	signal(SIGPIPE, SIG_IGN); /* get EPIPE instead */
 }
 
 static int usage(int code)
