@@ -17,8 +17,59 @@
 
 #include <err.h>
 #include "ssdp.h"
+#include "queue.h"
 
-static int ssdp_init(void)
+#define hidecursor()          fputs ("\e[?25l", stdout)
+#define showcursor()          fputs ("\e[?25h", stdout)
+
+struct host {
+	LIST_ENTRY(host) link;
+
+	char *name;
+	char *url;
+};
+
+LIST_HEAD(, host) hl = LIST_HEAD_INITIALIZER();
+
+static int host(char *name, char *url)
+{
+	struct host *h;
+
+	LIST_FOREACH(h, &hl, link) {
+		if (strcmp(h->name, name))
+			continue;
+		if (strcmp(h->url, url))
+			continue;
+
+		return 1;
+	}
+
+	h = malloc(sizeof(*h));
+	h->name = strdup(name);
+	h->url  = strdup(url);
+
+	LIST_INSERT_HEAD(&hl, h, link);
+
+	return 0;
+}
+
+static void progress(void)
+{
+	size_t num = 4;
+	const char *style = "\\-/|";
+//	const char *style = ">v<^";
+//	size_t num = 6;
+//	const char *style = ".oOOo.";
+	static unsigned int i = 0;
+
+//	printf("%u %% %zd = %lu (%u / %zd = %lu)\n", i, num, i % num, i, num, i / num);
+
+	putchar(style[i++ % num]);
+	printf("\b");
+	fflush(stdout);
+}
+
+static int ssdp_init(char *addr, short port)
 {
        int sd;
        struct sockaddr sa;
@@ -36,12 +87,12 @@ static int ssdp_init(void)
 
        memset(&sa, 0, sizeof(sa));
        sin->sin_family = AF_INET;
-       sin->sin_addr.s_addr = inet_addr(MC_SSDP_GROUP);
-       sin->sin_port = htons(MC_SSDP_PORT);
+       sin->sin_addr.s_addr = inet_addr(addr);
+       sin->sin_port = htons(port);
 
        if (bind(sd, &sa, sizeof(*sin)) < 0) {
                close(sd);
-	       err(1, "Failed binding to %s:%d", MC_SSDP_GROUP, MC_SSDP_PORT);
+	       err(1, "Failed binding to %s:%d", addr, port);
        }
 
        return sd;
@@ -101,8 +152,77 @@ static char *trim(char *ptr)
 	return ptr;
 }
 
+static int xml(char *buf, char *tagn, char *val, size_t vlen)
+{
+	size_t len;
+	char *ptr, *end;
+	char tag[20];
+
+	len = snprintf(tag, sizeof(tag), "<%s>", tagn);
+//	printf("Looking for '%s' in: %s\n", tag, buf);
+	ptr = strstr(buf, tag);
+	if (!ptr)
+		return 0;
+	ptr += len;
+
+	len = snprintf(tag, sizeof(tag), "</%s>", tagn);
+	end = strstr(buf, tag);
+	if (end)
+		*end = 0;
+
+	memset(val, 0, vlen);
+	strncpy(val, ptr, vlen - 1);
+//	printf(">> Found '%s': %s\n", tagn, val);
+
+	return 1;
+}
+
+static void parse(FILE *fp, char **name, char **url)
+{
+	static char uri[80];
+	static char nm[80];
+	char buf[512];
+
+	memset(uri, 0, sizeof(uri));
+	memset(nm, 0, sizeof(nm));
+
+	while (fgets(buf, sizeof(buf), fp)) {
+//		printf("Checking XML for tags: '%s'\n", buf);
+		if (!nm[0] && xml(buf, "friendlyName", nm, sizeof(nm)))
+			*name = nm;
+		if (!uri[0] && xml(buf, "presentationURL", uri, sizeof(uri)))
+			*url = uri;
+
+		if (*name && *url)
+			break;
+	}
+}
+
+extern FILE *uget(char *url);
+static void printsrv(char *srv, char *loc)
+{
+	FILE *fp;
+	char *name = NULL, *url = NULL;
+
+//	printf("Calling uget with '%s'\n", loc);
+	fp = uget(loc);
+	if (!fp) {
+		printf("\r+ %-40s  %s\n", trim(srv), trim(loc));
+		return;
+	}
+
+	parse(fp, &name, &url);
+	fclose(fp);
+
+	if (host(name, url))
+		return;
+
+	printf("\r+ %-40s  %s\n", name, url);
+}
+
 static void ssdp_read(int sd)
 {
+	static char oldloc[80] = { 0 };
 	ssize_t len;
 	char *loc;
 	char *srv;
@@ -110,41 +230,71 @@ static void ssdp_read(int sd)
 	char buf[256];
 
 	memset(buf, 0, sizeof(buf));
-	len = recv(sd, buf, sizeof(buf) - 1, MSG_DONTWAIT);
+	len = recv(sd, buf, sizeof(buf) - 1, 0);
 
-	if (strstr(buf, "M-SEARCH *")) {
-	cont:
-		putchar('.');
+	if (strstr(buf, "M-SEARCH *"))
 		return;
-	}
 
 	loc = find(buf, "Location:");
 	srv = find(buf, "Server:");
 
 	if (!loc || !srv)
-		goto cont;
+		return;
 
-	printf("\r+ %-30s  %s\n", trim(srv), trim(loc));
+	trim(loc);
+	trim(srv);
+
+	/* Duplicate detector */
+	if (!strncmp(oldloc, loc, sizeof(oldloc)))
+		return;
+
+	strncpy(oldloc, loc, sizeof(oldloc));
+	printsrv(srv, loc);
+}
+
+static void bye(int signo)
+{
+	showcursor();
+	exit(0);
 }
 
 int main(void)
 {
-	struct pollfd pfd;
+	struct pollfd pfd[2];
 
-	pfd.fd = ssdp_init();
-	pfd.events = POLLIN;
+	signal(SIGINT, bye);
+
+	hidecursor();
+	progress();
+
+	/* Listen to both 239.255.255.250 and INADDR_ANY */
+	pfd[0].fd = ssdp_init(MC_SSDP_GROUP, MC_SSDP_PORT);
+	pfd[1].fd = ssdp_init("0.0.0.0", MC_SSDP_PORT);
+
+	pfd[0].events = POLLIN;
+	pfd[1].events = POLLIN;
 
 	/* Initial scan */
-	ssdp_scan(pfd.fd);
+	ssdp_scan(pfd[0].fd);
 
 	while (1) {
 		int num;
 
-		num = poll(&pfd, 1, 3000);
-		if (num == 0)
-			ssdp_scan(pfd.fd);
-		else if (num > 0)
-			ssdp_read(pfd.fd);
+		num = poll(pfd, NELEMS(pfd), 100);
+		if (num < 0)
+			continue;
+
+		if (num == 0) {
+			progress();
+			ssdp_scan(pfd[0].fd);
+			continue;
+		}
+
+		for (size_t i = 0; i < NELEMS(pfd); i++) {
+			progress();
+			if (pfd[i].revents & POLLIN)
+				ssdp_read(pfd[i].fd);
+		}
 	}
 
 	return 0;

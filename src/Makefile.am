@@ -7,5 +7,5 @@ sbin_PROGRAMS    = ssdpd
 ssdpd_SOURCES    = ssdpd.c ssdp.h web.c queue.h
 ssdpd_LDADD      = $(LIBS) $(LIBOBJS)
 
-ssdp_scan_SOURCES = ssdp-scan.c ssdp.h
+ssdp_scan_SOURCES = ssdp-scan.c ssdp.h uget.c queue.h
 ssdp_scan_LDADD   = $(LIBS) $(LIBOBJS)
