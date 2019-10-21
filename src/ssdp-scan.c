@@ -201,18 +201,45 @@ static void parse(FILE *fp, char **name, char **url)
 extern FILE *uget(char *url);
 static void printsrv(char *srv, char *loc)
 {
-	FILE *fp;
 	char *name = NULL, *url = NULL;
+	char *copy;
+	FILE *fp;
 
-//	printf("Calling uget with '%s'\n", loc);
+	/* Save copy in case of short/empty presentationURL */
+	copy = strdup(loc);
+
+	if (strncmp(loc, "http", 4))
+		goto fallback;
+
 	fp = uget(loc);
 	if (!fp) {
+	fallback:
+		free(copy);
 		printf("\r+ %-40s  %s\n", trim(srv), trim(loc));
 		return;
 	}
 
 	parse(fp, &name, &url);
 	fclose(fp);
+
+	if (url && url[0] == '/') {
+		char *ptr;
+
+		copy = realloc(copy, strlen(copy) + strlen(url));
+		if (!copy)
+			return;
+
+		ptr = strstr(copy, "://");
+		if (ptr)
+			ptr += 3;
+		else
+			ptr = copy;
+
+		ptr = strchr(ptr, '/');
+		if (ptr)
+			strcpy(ptr, url);
+		url = copy;
+	}
 
 	if (host(name, url))
 		return;

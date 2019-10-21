@@ -46,6 +46,12 @@ static void split(char *url, char **server, uint16_t *port, char **location)
 	if (ptr) {
 		*ptr++ = 0;
 		pptr = ptr;
+	} else {
+		ptr = *server;
+		if (!strncmp(url, "http://", 7))
+			pptr = "80";
+		else
+			pptr = "443";
 	}
 
 	ptr = strchr(ptr, '/');
