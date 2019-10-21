@@ -244,11 +244,6 @@ static void ssdp_read(int sd)
 	trim(loc);
 	trim(srv);
 
-	/* Duplicate detector */
-	if (!strncmp(oldloc, loc, sizeof(oldloc)))
-		return;
-
-	strncpy(oldloc, loc, sizeof(oldloc));
 	printsrv(srv, loc);
 }
 
