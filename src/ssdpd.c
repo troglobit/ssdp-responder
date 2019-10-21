@@ -24,13 +24,8 @@ struct ifsock {
 	int stale;
 	int mod;
 
-	/*
-	 * Sockets for inbound and outbound
-	 *
-	 * - The inbound is the multicast socket, shared between all ifaces
-	 * - The outbound is bound to the iface address and a random port
-	 */
-	int in, out;
+	/* Interface socket, one per interface address */
+	int sd;
 
 	/* Interface address and netmask */
 	struct sockaddr_in addr;
@@ -97,7 +92,7 @@ static struct ifsock *find_iface(struct sockaddr *sa)
 	return NULL;
 }
 
-int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
+int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
 {
 	struct ifsock *ifs;
 	struct sockaddr_in *address = (struct sockaddr_in *)addr;
@@ -111,8 +106,7 @@ int register_socket(int in, int out, struct sockaddr *addr, struct sockaddr *mas
 		return -1;
 	}
 
-	ifs->in   = in;
-	ifs->out  = out;
+	ifs->sd   = sd;
 	ifs->mod  = 1;
 	ifs->cb   = cb;
 	ifs->addr = *address;
@@ -191,10 +185,8 @@ static int close_socket(void)
 
 	LIST_FOREACH_SAFE(ifs, &il, link, tmp) {
 		LIST_REMOVE(ifs, link);
-		if (ifs->out != -1)
-			ret |= close(ifs->out);
-		else
-			ret |= close(ifs->in);
+		if (ifs->sd != -1)
+			ret |= close(ifs->sd);
 		free(ifs);
 	}
 
@@ -350,8 +342,6 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 
 	if (ifs->addr.sin_addr.s_addr == htonl(INADDR_ANY))
 		return;
-	if (ifs->out == -1)
-		return;
 
 	if (!strcmp(type, SSDP_ST_ALL))
 		type = NULL;
@@ -369,7 +359,7 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 	}
 
 	logit(LOG_DEBUG, "Sending %s from %s ...", !note ? "reply" : "notify", host);
-	num = sendto(ifs->out, buf, strlen(buf), 0, sin, sizeof(struct sockaddr_in));
+	num = sendto(ifs->sd, buf, strlen(buf), 0, sin, sizeof(struct sockaddr_in));
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s: %s", !note ? "reply" : "notify", type, strerror(errno));
 }
@@ -459,7 +449,7 @@ static void mark(void)
 	struct ifsock *ifs;
 
 	LIST_FOREACH(ifs, &il, link) {
-		if (ifs->out != -1)
+		if (ifs->sd != -1)
 			ifs->stale = 1;
 		else
 			ifs->stale = 0;
@@ -479,7 +469,7 @@ static int sweep(void)
 		logit(LOG_DEBUG, "Removing stale ifs %s", inet_ntoa(ifs->addr.sin_addr));
 
 		LIST_REMOVE(ifs, link);
-		close(ifs->out);
+		close(ifs->sd);
 		free(ifs);
 	}
 
@@ -538,7 +528,7 @@ static int ssdp_init(int ttl, char *iflist[], size_t num)
 		if (!multicast_join(sd, ifa->ifa_addr))
 			logit(LOG_DEBUG, "Joined group %s on interface %s", MC_SSDP_GROUP, ifa->ifa_name);
 
-		if (register_socket(sd, sd, ifa->ifa_addr, ifa->ifa_netmask, ssdp_recv)) {
+		if (register_socket(sd, ifa->ifa_addr, ifa->ifa_netmask, ssdp_recv)) {
 			close(sd);
 			break;
 		}
@@ -556,7 +546,7 @@ static void handle_message(int sd)
 	struct ifsock *ifs;
 
 	LIST_FOREACH(ifs, &il, link) {
-		if (ifs->in != sd)
+		if (ifs->sd != sd)
 			continue;
 
 		if (ifs->cb)
@@ -572,7 +562,7 @@ static void wait_message(time_t tmo)
 	struct ifsock *ifs;
 
 	LIST_FOREACH(ifs, &il, link) {
-		pfd[ifnum].fd = ifs->in;
+		pfd[ifnum].fd     = ifs->sd;
 		pfd[ifnum].events = POLLIN;
 		ifnum++;
 	}

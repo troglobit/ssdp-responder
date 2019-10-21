@@ -210,7 +210,7 @@ void web_init(void)
 	if (listen(sd, 10) != 0)
 		err(1, "Failed setting web listen backlog");
 
-	register_socket(sd, -1, &sa, NULL, web_recv);
+	register_socket(sd, &sa, NULL, web_recv);
 }
 
 /**
