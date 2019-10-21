@@ -222,12 +222,11 @@ static void printsrv(char *srv, char *loc)
 
 static void ssdp_read(int sd)
 {
-	static char oldloc[80] = { 0 };
 	ssize_t len;
 	char *loc;
 	char *srv;
 	char *ptr;
-	char buf[256];
+	char buf[512];
 
 	memset(buf, 0, sizeof(buf));
 	len = recv(sd, buf, sizeof(buf) - 1, 0);
