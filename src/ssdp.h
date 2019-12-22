@@ -17,7 +17,7 @@
 #ifndef SSDP_H_
 #define SSDP_H_
 
-#include <config.h>
+#include "config.h"
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
