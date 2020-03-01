@@ -1,8 +1,10 @@
-[![License Badge][]][License] [![Travis Status][]][Travis]
+SSDP Responder for Linux/UNIX
+=============================
+[![License Badge][]][License] [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
-Simple Service Discovery Protocol daemon (SSDP) for networked Linux
-devices.  Useful for small and embedded systems that want to announce
-themselves to systems running Windows.
+Simple Service Discovery Protocol daemon (SSDP) for networked Linux and
+UNIX devices.  Useful in any setup, big or small, but targeted more at
+embedded systems that need to announce themselves to Windows systems.
 
 `ssdpd` is a stand-alone UNIX daemon with no external dependencies but
 the standard C library.  It has a built-in web server for serving the
@@ -52,7 +54,9 @@ Origin
 Cloned from [mrdisc](https://github.com/troglobit/mrdisc) and whacked at
 with a bat until it replies to SSDP "MSEARCH *" messages used by Windows.
 
-[License]:       https://en.wikipedia.org/wiki/ISC_license
-[License Badge]: https://img.shields.io/badge/License-ISC-blue.svg
-[Travis]:        https://travis-ci.org/troglobit/ssdp-responder
-[Travis Status]: https://travis-ci.org/troglobit/ssdp-responder.png?branch=master
+[License]:         https://en.wikipedia.org/wiki/ISC_license
+[License Badge]:   https://img.shields.io/badge/License-ISC-blue.svg
+[Travis]:          https://travis-ci.org/troglobit/ssdp-responder
+[Travis Status]:   https://travis-ci.org/troglobit/ssdp-responder.png?branch=master
+[Coverity Scan]:   https://scan.coverity.com/projects/20496
+[Coverity Status]: https://scan.coverity.com/projects/20496/badge.svg
