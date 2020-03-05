@@ -368,7 +368,7 @@ static void ssdp_recv(int sd)
 {
 	ssize_t len;
 	struct sockaddr sa;
-	socklen_t salen;
+	socklen_t salen = sizeof(sa);
 	char buf[MAX_PKT_SIZE + 1];
 
 	memset(buf, 0, sizeof(buf));
