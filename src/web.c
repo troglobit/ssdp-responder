@@ -174,10 +174,7 @@ void web_recv(int sd)
 	sin = stream_peek(client, ifname);
 	if (!sin) {
 		logit(LOG_ERR, "Failed resolving client interface: %s", strerror(errno));
-		return;
-	}
-
-	if (!respond(client, sin))
+	} else if (!respond(client, sin))
 		shutdown(client, SHUT_RDWR);
 
 	close(client);
