@@ -143,7 +143,9 @@ static int respond(int sd, struct sockaddr_in *sin)
 		snprintf(url, sizeof(url), "  <manufacturerURL>%s</manufacturerURL>\r\n", MANUFACTURER_URL);
 #endif
 		logit(LOG_DEBUG, "Sending XML reply ...");
-		send(sd, head, strlen(head), 0);
+		if (send(sd, head, strlen(head), 0) < 0)
+			goto fail;
+
 		snprintf(mesg, sizeof(mesg), xml,
 			 hostname,
 			 MANUFACTURER,
@@ -152,6 +154,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 			 uuid,
 			 inet_ntoa(sin->sin_addr));
 		if (send(sd, mesg, strlen(mesg), 0) < 0) {
+		fail:
 			logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));
 			return -1;
 		}
