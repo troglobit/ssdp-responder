@@ -676,11 +676,11 @@ static void uuidgen(void)
 
 	fp = fopen(file, "r");
 	if (!fp) {
+	generate:
 		fp = fopen(file, "w");
 		if (!fp)
 			logit(LOG_WARNING, "Cannot create UUID cache, %s: %s", file, strerror(errno));
 
-	generate:
 		srand(time(NULL));
 		snprintf(buf, sizeof(buf), "uuid:%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
 			 rand() & 0xFFFFFFFF,
