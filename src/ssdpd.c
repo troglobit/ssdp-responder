@@ -366,12 +366,13 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 
 static void ssdp_recv(int sd)
 {
-	ssize_t len;
 	struct sockaddr sa;
 	socklen_t salen;
+	ssize_t len;
 	char buf[MAX_PKT_SIZE + 1];
 
 	memset(buf, 0, sizeof(buf));
+	salen = sizeof(sa);
 	len = recvfrom(sd, buf, sizeof(buf) - 1, MSG_DONTWAIT, &sa, &salen);
 	if (len > 0) {
 		if (sa.sa_family != AF_INET)
