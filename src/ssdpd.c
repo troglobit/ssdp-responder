@@ -641,12 +641,18 @@ static void lsb_init(void)
 		line[strlen(line) - 1] = 0;
 
 		ptr = strstr(line, "DISTRIB_ID");
-		if (ptr && (ptr = strchr(ptr, '=')))
+		if (ptr && (ptr = strchr(ptr, '='))) {
+			if (os)
+				free(os);
 			os = strdup(++ptr);
+		}
 
 		ptr = strstr(line, "DISTRIB_RELEASE");
-		if (ptr && (ptr = strchr(ptr, '=')))
+		if (ptr && (ptr = strchr(ptr, '='))) {
+			if (ver)
+				free(ver);
 			ver = strdup(++ptr);
+		}
 	}
 	fclose(fp);
 
