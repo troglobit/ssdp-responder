@@ -206,6 +206,8 @@ static void printsrv(char *srv, char *loc)
 
 	/* Save copy in case of short/empty presentationURL */
 	copy = strdup(loc);
+	if (!copy)
+		return;
 
 	if (strncmp(loc, "http", 4))
 		goto fallback;
@@ -213,8 +215,8 @@ static void printsrv(char *srv, char *loc)
 	fp = uget(loc);
 	if (!fp) {
 	fallback:
-		free(copy);
 		printf("\r+ %-40s  %s\n", trim(srv), trim(loc));
+		free(copy);
 		return;
 	}
 
@@ -240,10 +242,10 @@ static void printsrv(char *srv, char *loc)
 		url = copy;
 	}
 
-	if (host(name, url))
-		return;
+	if (!host(name, url))
+		printf("\r+ %-40s  %s\n", name, url);
 
-	printf("\r+ %-40s  %s\n", name, url);
+	free(copy);
 }
 
 static void ssdp_read(int sd)
