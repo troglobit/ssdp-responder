@@ -256,6 +256,10 @@ static void ssdp_read(int sd)
 
 	memset(buf, 0, sizeof(buf));
 	len = recv(sd, buf, sizeof(buf) - 1, 0);
+	if (len <= 0)
+		return;
+
+	buf[len] = 0;
 
 	if (strstr(buf, "M-SEARCH *"))
 		return;
