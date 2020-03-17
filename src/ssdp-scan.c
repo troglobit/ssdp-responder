@@ -35,6 +35,9 @@ static int host(char *name, char *url)
 {
 	struct host *h;
 
+	if (!name || !url)
+		return 1;
+
 	LIST_FOREACH(h, &hl, link) {
 		if (strcmp(h->name, name))
 			continue;
@@ -222,6 +225,9 @@ static void printsrv(char *srv, char *loc)
 
 	parse(fp, &name, &url);
 	fclose(fp);
+
+	if (!name || !url)
+		return;
 
 	if (url && url[0] == '/') {
 		char *ptr;
