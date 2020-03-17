@@ -375,6 +375,8 @@ static void ssdp_recv(int sd)
 	salen = sizeof(sa);
 	len = recvfrom(sd, buf, sizeof(buf) - 1, MSG_DONTWAIT, &sa, &salen);
 	if (len > 0) {
+		buf[len] = 0;
+
 		if (sa.sa_family != AF_INET)
 			return;
 
