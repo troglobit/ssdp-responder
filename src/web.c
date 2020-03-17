@@ -55,7 +55,7 @@ const char *xml =
 
 
 /* Peek into SOCK_STREAM on accepted client socket to figure out inbound interface */
-static struct sockaddr_in *stream_peek(int sd, char *ifname)
+static struct sockaddr_in *stream_peek(int sd, char *ifname, size_t iflen)
 {
         struct ifaddrs *ifaddr, *ifa;
         static struct sockaddr_in sin;
@@ -79,7 +79,7 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname)
 
                 iin = (struct sockaddr_in *)ifa->ifa_addr;
                 if (!memcmp(&sin.sin_addr, &iin->sin_addr, len)) {
-                        strncpy(ifname, ifa->ifa_name, IF_NAMESIZE);
+                        strlcpy(ifname, ifa->ifa_name, iflen);
                         break;
                 }
         }
@@ -163,7 +163,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 void web_recv(int sd)
 {
 	int client;
-	char ifname[IF_NAMESIZE] = "UNKNOWN";
+	char ifname[IF_NAMESIZE + 1] = "UNKNOWN";
 	struct sockaddr_in *sin;
 
 	client = accept(sd, NULL, NULL);
@@ -172,7 +172,7 @@ void web_recv(int sd)
 		return;
 	}
 
-	sin = stream_peek(client, ifname);
+	sin = stream_peek(client, ifname, sizeof(ifname));
 	if (!sin) {
 		logit(LOG_ERR, "Failed resolving client interface: %s", strerror(errno));
 	} else if (!respond(client, sin))
