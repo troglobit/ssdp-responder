@@ -170,8 +170,7 @@ static int xml(char *buf, char *tagn, char *val, size_t vlen)
 	if (end)
 		*end = 0;
 
-	memset(val, 0, vlen);
-	strncpy(val, ptr, vlen - 1);
+	strlcpy(val, ptr, vlen);
 //	printf(">> Found '%s': %s\n", tagn, val);
 
 	return 1;

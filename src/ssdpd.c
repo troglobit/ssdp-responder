@@ -264,7 +264,7 @@ static void compose_response(char *type, char *host, char *buf, size_t len)
 	}
 
 	if (!type)
-		strncpy(usn, uuid, sizeof(usn));
+		strlcpy(usn, uuid, sizeof(usn));
 
 	snprintf(buf, len, "HTTP/1.1 200 OK\r\n"
 		 "Server: %s\r\n"
@@ -296,7 +296,7 @@ static void compose_notify(char *type, char *host, char *buf, size_t len)
 
 	if (!type) {
 		type = usn;
-		strncpy(usn, uuid, sizeof(usn));
+		strlcpy(usn, uuid, sizeof(usn));
 	}
 
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
