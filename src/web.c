@@ -112,12 +112,13 @@ static int respond(int sd, struct sockaddr_in *sin)
 	}
 
 	memset(mesg, 0, sizeof(mesg));
-	rcvd = recv(sd, mesg, sizeof(mesg), 0);
+	rcvd = recv(sd, mesg, sizeof(mesg) - 1, 0);
 	if (rcvd <= 0) {
 		if (rcvd == -1)
 			logit(LOG_WARNING, "web recv() error: %s", strerror(errno));
 		return -1;
 	}
+	mesg[rcvd] = 0;
 
 	logit(LOG_DEBUG, "%s", mesg);
 	reqline[0] = strtok(mesg, " \t\n");
