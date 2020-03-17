@@ -78,4 +78,8 @@ int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (
 int     pidfile    (const char *basename);
 #endif
 
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *dst, const char *src, size_t siz);
+#endif
+
 #endif /* SSDP_H_ */
