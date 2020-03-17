@@ -226,8 +226,10 @@ static void printsrv(char *srv, char *loc)
 	parse(fp, &name, &url);
 	fclose(fp);
 
-	if (!name || !url)
+	if (!name || !url) {
+		free(copy);
 		return;
+	}
 
 	if (url && url[0] == '/') {
 		char *ptr;
