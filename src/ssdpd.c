@@ -429,13 +429,13 @@ static void ssdp_recv(int sd)
 
 static int multicast_join(int sd, struct sockaddr *sa)
 {
-	struct ip_mreqn mreq;
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	struct ip_mreqn imr;
 
-	memset(&mreq, 0, sizeof(mreq));
-	mreq.imr_address = sin->sin_addr;
-	mreq.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
-        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))) {
+	memset(&imr, 0, sizeof(imr));
+	imr.imr_address = sin->sin_addr;
+	imr.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
+        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(imr))) {
 		if (EADDRINUSE == errno)
 			return 0;
 
