@@ -74,9 +74,10 @@ static void progress(void)
 
 static int ssdp_init(char *addr, short port)
 {
-       int sd;
+       struct sockaddr_in *sin;
        struct sockaddr sa;
-       struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
+       in_addr_t ina;
+       int sd;
 
        sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
        if (sd < 0)
@@ -89,6 +90,7 @@ static int ssdp_init(char *addr, short port)
 #endif
 
        memset(&sa, 0, sizeof(sa));
+       sin = (struct sockaddr_in *)&sa;
        sin->sin_family = AF_INET;
        sin->sin_addr.s_addr = inet_addr(addr);
        sin->sin_port = htons(port);

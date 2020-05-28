@@ -55,9 +55,9 @@ char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 /* Find interface in same subnet as sa */
 static struct ifsock *find_outbound(struct sockaddr *sa)
 {
-	in_addr_t cand;
-	struct ifsock *ifs;
 	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
+	struct ifsock *ifs;
+	in_addr_t cand;
 
 	cand = addr->sin_addr.s_addr;
 	LIST_FOREACH(ifs, &il, link) {
@@ -78,8 +78,8 @@ static struct ifsock *find_outbound(struct sockaddr *sa)
 /* Exact match, must be same ifaddr as sa */
 static struct ifsock *find_iface(struct sockaddr *sa)
 {
-	struct ifsock *ifs;
 	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
+	struct ifsock *ifs;
 
 	if (!sa)
 		return NULL;
@@ -94,9 +94,9 @@ static struct ifsock *find_iface(struct sockaddr *sa)
 
 int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
 {
-	struct ifsock *ifs;
 	struct sockaddr_in *address = (struct sockaddr_in *)addr;
 	struct sockaddr_in *netmask = (struct sockaddr_in *)mask;
+	struct ifsock *ifs;
 
 	ifs = calloc(1, sizeof(*ifs));
 	if (!ifs) {
@@ -119,10 +119,10 @@ int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (
 
 static int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 {
+	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
+	struct ip_mreqn mreq;
 	int sd, rc;
 	char loop;
-	struct ip_mreqn mreq;
-	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
 
 	sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (sd < 0)
@@ -180,8 +180,8 @@ static int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 
 static int close_socket(void)
 {
-	int ret = 0;
 	struct ifsock *ifs, *tmp;
+	int ret = 0;
 
 	LIST_FOREACH_SAFE(ifs, &il, link, tmp) {
 		LIST_REMOVE(ifs, link);
@@ -195,8 +195,8 @@ static int close_socket(void)
 
 static int filter_addr(struct sockaddr *sa)
 {
-	struct ifsock *ifs;
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	struct ifsock *ifs;
 
 	if (!sa)
 		return 1;
@@ -325,13 +325,13 @@ size_t pktlen(unsigned char *buf)
 
 static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 {
-	int s;
-	size_t i, len, note = 0;
-	ssize_t num;
+	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	struct sockaddr dest;
 	char host[NI_MAXHOST];
 	char buf[MAX_PKT_SIZE];
-	struct sockaddr dest;
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+	size_t i, len, note = 0;
+	ssize_t num;
+	int s;
 
 	gethostname(hostname, sizeof(hostname));
 	s = getnameinfo((struct sockaddr *)&ifs->addr, sizeof(struct sockaddr_in), host, sizeof(host), NULL, 0, NI_NUMERICHOST);
@@ -366,12 +366,13 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 
 static void ssdp_recv(int sd)
 {
-	struct sockaddr sa;
-	socklen_t salen = sizeof(sa);
-	ssize_t len;
 	char buf[MAX_PKT_SIZE + 1];
+	struct sockaddr sa;
+	socklen_t salen;
+	ssize_t len;
 
 	memset(buf, 0, sizeof(buf));
+	salen = sizeof(sa);
 	len = recvfrom(sd, buf, sizeof(buf) - 1, MSG_DONTWAIT, &sa, &salen);
 	if (len > 0) {
 		buf[len] = 0;
@@ -380,10 +381,10 @@ static void ssdp_recv(int sd)
 			return;
 
 		if (strstr(buf, "M-SEARCH *")) {
-			size_t i;
-			char *ptr, *type;
-			struct ifsock *ifs;
 			struct sockaddr_in *sin = (struct sockaddr_in *)&sa;
+			struct ifsock *ifs;
+			char *ptr, *type;
+			size_t i;
 
 			ifs = find_outbound(&sa);
 			if (!ifs) {
@@ -460,8 +461,8 @@ static void mark(void)
 
 static int sweep(void)
 {
-	int modified = 0;
 	struct ifsock *ifs, *tmp;
+	int modified = 0;
 
 	LIST_FOREACH_SAFE(ifs, &il, link, tmp) {
 		if (!ifs->stale)
@@ -480,9 +481,9 @@ static int sweep(void)
 
 static int ssdp_init(int ttl, char *iflist[], size_t num)
 {
+	struct ifaddrs *ifaddrs, *ifa;
 	int modified;
 	size_t i;
-	struct ifaddrs *ifaddrs, *ifa;
 
 	logit(LOG_INFO, "Updating interfaces ...");
 
@@ -558,10 +559,10 @@ static void handle_message(int sd)
 
 static void wait_message(time_t tmo)
 {
-	int num = 1, timeout;
-	size_t ifnum = 0;
 	struct pollfd pfd[MAX_NUM_IFACES];
 	struct ifsock *ifs;
+	int num = 1, timeout;
+	size_t ifnum = 0;
 
 	LIST_FOREACH(ifs, &il, link) {
 		pfd[ifnum].fd     = ifs->sd;
@@ -626,10 +627,10 @@ static void announce(int mod)
 
 static void lsb_init(void)
 {
-	FILE *fp;
-	char *ptr;
-	char line[80];
 	const char *file = "/etc/lsb-release";
+	char line[80];
+	char *ptr;
+	FILE *fp;
 
 	fp = fopen(file, "r");
 	if (!fp) {
@@ -669,9 +670,9 @@ static void lsb_init(void)
 /* https://en.wikipedia.org/wiki/Universally_unique_identifier */
 static void uuidgen(void)
 {
-	FILE *fp;
-	char buf[42];
 	const char *file = _PATH_VARDB PACKAGE_NAME ".cache";
+	char buf[42];
+	FILE *fp;
 
 	fp = fopen(file, "r");
 	if (!fp) {
@@ -743,14 +744,14 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
-	int i, c;
+	time_t now, rtmo = 0, itmo = 0;
 	int background = 1;
 	int log_level = LOG_NOTICE;
 	int log_opts = LOG_CONS | LOG_PID;
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
 	int ttl = MC_TTL_DEFAULT;
-	time_t now, rtmo = 0, itmo = 0;
+	int i, c;
 
 	while ((c = getopt(argc, argv, "dhi:nr:t:v")) != EOF) {
 		switch (c) {
