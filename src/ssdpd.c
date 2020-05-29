@@ -359,7 +359,7 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 	}
 
 	logit(LOG_DEBUG, "Sending %s from %s ...", !note ? "reply" : "notify", host);
-	num = sendto(ifs->sd, buf, strlen(buf), 0, sin, sizeof(struct sockaddr_in));
+	num = sendto(ifs->sd, buf, strlen(buf), 0, (struct sockaddr *)sin, sizeof(struct sockaddr_in));
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s: %s", !note ? "reply" : "notify", type, strerror(errno));
 }

@@ -34,6 +34,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <sys/param.h>		/* MIN() */
