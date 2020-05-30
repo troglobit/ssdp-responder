@@ -120,7 +120,6 @@ int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (
 static int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 {
 	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
-	struct ip_mreqn mreq;
 	int sd, rc;
 	char loop;
 
@@ -141,15 +140,6 @@ static int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 #ifdef SO_REUSEPORT
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
 #endif
-
-	memset(&mreq, 0, sizeof(mreq));
-	mreq.imr_address = address->sin_addr;
-	mreq.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
-        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq))) {
-		close(sd);
-		logit(LOG_ERR, "Failed joining group %s: %s", MC_SSDP_GROUP, strerror(errno));
-		return -1;
-	}
 
 	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
 	if (rc < 0) {
@@ -431,10 +421,9 @@ static void ssdp_recv(int sd)
 static int multicast_join(int sd, struct sockaddr *sa)
 {
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-	struct ip_mreqn imr;
+	struct ip_mreq imr;
 
-	memset(&imr, 0, sizeof(imr));
-	imr.imr_address = sin->sin_addr;
+	imr.imr_interface = sin->sin_addr;
 	imr.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
         if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(imr))) {
 		if (EADDRINUSE == errno)
