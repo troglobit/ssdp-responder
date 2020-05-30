@@ -130,7 +130,7 @@ static int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(port);
-	sin.sin_addr = address->sin_addr;
+	sin.sin_addr.s_addr = inet_addr(MC_SSDP_GROUP);
 	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 		close(sd);
 		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(address->sin_addr), port, strerror(errno));
