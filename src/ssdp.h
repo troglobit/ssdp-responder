@@ -41,6 +41,8 @@
 #include <sys/socket.h>
 #include <syslog.h>
 
+#include "queue.h"
+
 /* Notify should be less than half the cache timeout */
 #define NOTIFY_INTERVAL      300
 #define REFRESH_INTERVAL     600
@@ -69,11 +71,47 @@
 #define NELEMS(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
+struct ifsock {
+	LIST_ENTRY(ifsock) link;
+
+	int stale;
+	int mod;
+
+	/* Interface socket, one per interface address */
+	int sd;
+
+	/* Interface address and netmask */
+	struct sockaddr_in addr;
+	struct sockaddr_in mask;
+
+	void (*cb)(int);
+};
+
+struct ifsock *ifsock_iter(struct ifsock *this);
+
+#define IFSOCK_FOREACH(ifs) for (ifs = NULL; (ifs = ifsock_iter(ifs));)
+
 extern int debug;
 extern char uuid[];
 
 void web_init(void);
 int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
+
+void mark(void);
+int sweep(void);
+
+struct ifsock *find_outbound(struct sockaddr *sa);
+struct ifsock *find_iface(struct sockaddr *sa);
+
+int filter_addr(struct sockaddr *sa);
+int filter_iface(char *ifname, char *iflist[], size_t num);
+
+int poll_init(struct pollfd pfd[], size_t num);
+void handle_message(int sd);
+
+int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
+int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl);
+int close_socket(void);
 
 #ifndef HAVE_PIDFILE
 int pidfile(const char *basename);
