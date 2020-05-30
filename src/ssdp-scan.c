@@ -297,6 +297,7 @@ static void bye(int signo)
 int main(void)
 {
 	struct pollfd pfd[2];
+	int throttle = 0;
 
 	signal(SIGINT, bye);
 
@@ -322,7 +323,9 @@ int main(void)
 
 		if (num == 0) {
 			progress();
-			ssdp_scan(pfd[0].fd);
+
+			if (!(throttle++ % 20))
+				ssdp_scan(pfd[0].fd);
 			continue;
 		}
 
