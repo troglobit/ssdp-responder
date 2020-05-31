@@ -209,15 +209,6 @@ int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 	if (sd < 0)
 		return -1;
 
-	sin.sin_family = AF_INET;
-	sin.sin_port = htons(port);
-	sin.sin_addr.s_addr = inet_addr(MC_SSDP_GROUP);
-	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-		close(sd);
-		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(address->sin_addr), port, strerror(errno));
-		return -1;
-	}
-
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEADDR);
 #ifdef SO_REUSEPORT
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
@@ -246,6 +237,14 @@ int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 	}
 
 	logit(LOG_DEBUG, "Adding new interface %s with address %s", ifname, inet_ntoa(address->sin_addr));
+	sin.sin_family = AF_INET;
+	sin.sin_port = htons(port);
+	sin.sin_addr.s_addr = inet_addr("0.0.0.0"); //inet_addr(MC_SSDP_GROUP);
+	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+//		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(address->sin_addr), port, strerror(errno));
+//		close(sd);
+//		return -1;
+	}
 
 	return sd;
 }
