@@ -1,6 +1,18 @@
 #!/bin/sh
 IFCONF=`which ifconfig`
+PID=""
 Q=-q
+
+echo setup
+
+trap 'exit 1' INT HUP QUIT TERM ALRM USR1
+trap 'cleanup' EXIT
+
+cleanup()
+{
+    echo cleanup
+    [ -n "$PID" ] && kill $PID
+}
 
 set -e
 if [ "x$V" = "x1" ]; then
@@ -18,6 +30,8 @@ else
     LOOPBACK=`ip link | grep LOOPBACK | sed 's/[0-9]*: \([lo0-9]*\):.*/\1/'`
 fi
 
+echo test
+
 ./src/ssdpd -n $LOOPBACK &
 PID=$!
 
@@ -25,3 +39,6 @@ sleep 1
 
 ./src/ssdp-scan |grep $Q 127.0.0.1
 kill $PID
+
+echo ok
+exit 0
