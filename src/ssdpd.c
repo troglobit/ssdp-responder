@@ -265,7 +265,7 @@ static void announce(struct ifsock *ifs, int mod)
 static void lsb_init(void)
 {
 	const char *file = "/etc/lsb-release";
-	int severity = LOG_DEBUG;
+	int severity = LOG_INFO;
 	char line[80];
 	char *ptr;
 	FILE *fp;
