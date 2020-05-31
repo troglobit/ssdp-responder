@@ -1,0 +1,58 @@
+.\"                                                              -*- nroff -*-
+.\" Copyright (c) 2017-2020  Joachim Nilsson <troglobit@gmail.com>
+.\"
+.\" Permission to use, copy, modify, and/or distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
+.Dd May 31, 2020
+.Dt ssdp-scan 1
+.Os
+.Sh NAME
+.Nm ssdp-scan
+.Nd Scan for SSDP capable devices on attached networks
+.Sh SYNOPSIS
+.Nm
+.Sh DESCRIPTION
+.Nm
+is a tool for scanning for Simple Service Discovery Protocol (SSDP)
+capable devices on attached networks.  It sends
+.Cm M-SEARCH *
+to
+.Cm 239.255.255.250
+to continuously update a list of SSDP hosts.
+.Sh OPTIONS
+.Nm
+has no command line options.
+.Sh NOTES
+.Nm
+is very impatient.  In order to scan for hosts it sends
+.Cm M-SEARCH *
+messages every other second, which can result in lots of replies, which
+in turn causes
+.Nm
+to retrieve XML files from each replying host.  Be careful.
+.Pp
+.Nm
+does not terminate on its own.  It scans continuously until the user
+stops it by pressing Ctrl-C.
+.Pp
+.Nm
+does not rely on a local SSDP responder.  It has no dependencies besides
+a standard UNIX libc.
+.Sh SEE ALSO
+.Xr ssdpd 8
+.Sh AUTHORS
+.Nm
+was written by
+.An Joachim Nilsson Aq troglobit@gmail.com
+to be able to test
+.Nm ssdpd
+in complex network topologies.
