@@ -215,7 +215,7 @@ void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg)
 		cb(ifs, arg);
 }
 
-static int socket_open(char *ifname, struct sockaddr *addr, int port, int ttl)
+static int socket_open(char *ifname, struct sockaddr *addr, int ttl, int srv)
 {
 	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
 	int sd, rc;
@@ -244,13 +244,15 @@ static int socket_open(char *ifname, struct sockaddr *addr, int port, int ttl)
 	}
 
 	logit(LOG_DEBUG, "Adding new interface %s with address %s", ifname, inet_ntoa(address->sin_addr));
+	if (!srv)
+		return sd;
+
 	sin.sin_family = AF_INET;
-	sin.sin_port = htons(port);
-	sin.sin_addr.s_addr = inet_addr("0.0.0.0"); //inet_addr(MC_SSDP_GROUP);
+	sin.sin_port = htons(MC_SSDP_PORT);
+	sin.sin_addr.s_addr = inet_addr("0.0.0.0");
 	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-//		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(address->sin_addr), port, strerror(errno));
-//		close(sd);
-//		return -1;
+		logit(LOG_ERR, "Failed binding to %s:%d: %s", inet_ntoa(address->sin_addr),
+ 		      MC_SSDP_PORT, strerror(errno));
 	}
 
 	return sd;
@@ -305,7 +307,7 @@ static int multicast_join(int sd, struct sockaddr *sa)
 	return 0;
 }
 
-int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd))
+int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 {
 	struct ifaddrs *ifaddrs, *ifa;
 	int modified;
@@ -350,7 +352,7 @@ int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd))
 		if (filter_addr(ifa->ifa_addr))
 			continue;
 
-		sd = socket_open(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT, ttl);
+		sd = socket_open(ifa->ifa_name, ifa->ifa_addr, ttl, srv);
 		if (sd < 0)
 			continue;
 
@@ -365,6 +367,7 @@ int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd))
 			close(sd);
 			break;
 		}
+
 		logit(LOG_DEBUG, "Registered socket %d with ssd_recv() callback", sd);
 		modified++;
 	}

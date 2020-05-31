@@ -281,7 +281,7 @@ int main(void)
 	signal(SIGINT, bye);
 	signal(SIGALRM, bye);
 
-	if (ssdp_init(1, NULL, 0, ssdp_read) < 1)
+	if (ssdp_init(1, 0, NULL, 0, ssdp_read) < 1)
 		return 1;
 
 	hidecursor();

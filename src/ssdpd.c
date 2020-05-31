@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
 		now = time(NULL);
 
 		if (rtmo <= now) {
-			if (ssdp_init(ttl, &argv[optind], argc - optind, ssdp_recv) > 0) {
+			if (ssdp_init(ttl, 1, &argv[optind], argc - optind, ssdp_recv) > 0) {
 				logit(LOG_INFO, "Sending SSDP NOTIFY on new interfaces ...");
 				ssdp_foreach(announce, 1);
 			}

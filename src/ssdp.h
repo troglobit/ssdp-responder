@@ -91,7 +91,7 @@ struct ifsock {
 struct ifsock *ssdp_find(struct sockaddr *sa);
 void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg);
 
-int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd));
+int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd));
 int ssdp_exit(void);
 
 int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
