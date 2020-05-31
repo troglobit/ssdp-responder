@@ -72,37 +72,6 @@ static void progress(void)
 	fflush(stdout);
 }
 
-static int ssdp_init(char *addr, short port)
-{
-       struct sockaddr_in *sin;
-       struct sockaddr sa;
-       in_addr_t ina;
-       int sd;
-
-       sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-       if (sd < 0)
-	       err(1, "Failed opening multicast socket");
-
-       /* Allow reuse of local addresses. */
-       ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEADDR);
-#ifdef SO_REUSEPORT
-       ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
-#endif
-
-       memset(&sa, 0, sizeof(sa));
-       sin = (struct sockaddr_in *)&sa;
-       sin->sin_family = AF_INET;
-       sin->sin_addr.s_addr = inet_addr(addr);
-       sin->sin_port = htons(port);
-
-       if (bind(sd, &sa, sizeof(*sin)) < 0) {
-               close(sd);
-	       err(1, "Failed binding to %s:%d", addr, port);
-       }
-
-       return sd;
-}
-
 static void ssdp_scan(int sd)
 {
 	struct sockaddr_in sin;
@@ -296,7 +265,8 @@ static void bye(int signo)
 
 int main(void)
 {
-	struct pollfd pfd[2];
+	struct pollfd pfd[MAX_NUM_IFACES];
+	struct ifsock *ifs;
 	int throttle = 0;
 
 	signal(SIGINT, bye);
@@ -304,35 +274,41 @@ int main(void)
 	hidecursor();
 	progress();
 
-	/* Listen to both 239.255.255.250 and INADDR_ANY */
-	pfd[0].fd = ssdp_init(MC_SSDP_GROUP, MC_SSDP_PORT);
-	pfd[1].fd = ssdp_init("0.0.0.0", MC_SSDP_PORT);
-
-	pfd[0].events = POLLIN;
-	pfd[1].events = POLLIN;
+	if (ssdp_init(1, NULL, 0, ssdp_read) < 1)
+		return 1;
 
 	/* Initial scan */
-	ssdp_scan(pfd[0].fd);
+	IFSOCK_FOREACH(ifs)
+		ssdp_scan(ifs->sd);
 
 	while (1) {
+		size_t ifnum;
 		int num;
 
-		num = poll(pfd, NELEMS(pfd), 100);
+		ifnum = poll_init(pfd, NELEMS(pfd));
+
+		num = poll(pfd, ifnum, 100);
 		if (num < 0)
 			continue;
 
 		if (num == 0) {
 			progress();
 
-			if (!(throttle++ % 20))
-				ssdp_scan(pfd[0].fd);
+			if (!(throttle++ % 20)) {
+				IFSOCK_FOREACH(ifs)
+					ssdp_scan(ifs->sd);
+			}
 			continue;
 		}
 
 		for (size_t i = 0; i < NELEMS(pfd); i++) {
+			if (pfd[i].revents & POLLNVAL ||
+			    pfd[i].revents & POLLHUP)
+				continue;
+
 			progress();
 			if (pfd[i].revents & POLLIN)
-				ssdp_read(pfd[i].fd);
+				handle_message(pfd[i].fd);
 		}
 	}
 
