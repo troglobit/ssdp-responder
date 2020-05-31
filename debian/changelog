@@ -1,0 +1,10 @@
+ssdp-responder (1.6) stable; urgency=low
+
+  * Fix #1: CVE-2019-14323
+  * Refactor socket handling, enable SO_REUSEADDR + SO_REUSEPORT
+  * Change default behavior, must now use -n to run in foreground
+  * Add ssdp-scan tool, similar to mdns-scan
+  * Add systemd unit file
+  * Initial Debian/Ubuntu packaging
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 31 May 2020 13:11:18 +0200

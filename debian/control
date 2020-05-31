@@ -1,0 +1,33 @@
+Source: ssdp-responder
+Section: net
+Priority: optional
+Build-Depends: debhelper (>= 10), pkg-config, systemd
+Standards-Version: 4.3.0
+Maintainer: Joachim Nilsson <troglobit@gmail.com>
+Homepage: https://github.com/troglobit/ssdp-responder
+Vcs-Git: https://github.com/troglobit/ssdp-responder.git
+Vcs-Browser: https://github.com/troglobit/ssdp-responder/commits/
+
+Package: ssdpd
+Suggests: mdns-scan
+Conflicts: avahi-daemon
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssdpd1 (= ${binary:Version})
+Architecture: any
+Description: SSDP responder for Linux
+ ssdpd is a stand-alone UNIX daemon with no external dependencies but
+ the standard C library.  It has a built-in web server for serving the
+ UPnP XML description which Windows use to present the icon, by default
+ an InternetGatewayDevice is announced.
+
+Package: ssdp-scan
+Suggests: ssdpd
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssdpd1 (= ${binary:Version})
+Architecture: any
+Description: scan for SSDP capable devices on attached networks
+ ssdp-scan is a companion tool to ssdpd, but can also be used stand-alone
+ to scan for other SSDP capable devices.  It works by sending M-SEARCH *
+ to the multicast group 239.255.255.250.
+ .
+ ssdp-scan runs continuously and detects new devices as they appear on the
+ network.  The load it incurs on the network is noticeable, please use it
+ only for debug and discovery purposes..  Use Ctrl-C to stop it.
