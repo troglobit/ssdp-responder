@@ -53,6 +53,7 @@ const char *xml =
 	"</root>\r\n"
 	"\r\n";
 
+extern char uuid[];
 
 /* Peek into SOCK_STREAM on accepted client socket to figure out inbound interface */
 static struct sockaddr_in *stream_peek(int sd, char *ifname, size_t iflen)
@@ -211,7 +212,7 @@ void web_init(void)
 	if (listen(sd, 10) != 0)
 		err(1, "Failed setting web listen backlog");
 
-	register_socket(sd, &sa, NULL, web_recv);
+	ssdp_register(sd, &sa, NULL, web_recv);
 }
 
 /**

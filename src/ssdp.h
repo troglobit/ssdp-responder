@@ -41,6 +41,7 @@
 #include <sys/socket.h>
 #include <syslog.h>
 
+#include "compat.h"
 #include "queue.h"
 
 /* Notify should be less than half the cache timeout */
@@ -87,40 +88,15 @@ struct ifsock {
 	void (*cb)(int);
 };
 
-struct ifsock *ifsock_iter(struct ifsock *this);
+#define IFSOCK_FOREACH(ifs) for (ifs = NULL; (ifs = ssdp_iter(ifs));)
 
-#define IFSOCK_FOREACH(ifs) for (ifs = NULL; (ifs = ifsock_iter(ifs));)
-
-extern int debug;
-extern char uuid[];
-
-void web_init(void);
-int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
-
-void mark(void);
-int sweep(void);
-
-struct ifsock *find_outbound(struct sockaddr *sa);
-struct ifsock *find_iface(struct sockaddr *sa);
-
-int filter_addr(struct sockaddr *sa);
-int filter_iface(char *ifname, char *iflist[], size_t num);
-
-int poll_init(struct pollfd pfd[], size_t num);
-void handle_message(int sd);
-
-int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
-int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl);
-int close_socket(void);
+struct ifsock *ssdp_iter(struct ifsock *ifs);
+struct ifsock *ssdp_find(struct sockaddr *sa);
 
 int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd));
+int ssdp_exit(void);
 
-#ifndef HAVE_PIDFILE
-int pidfile(const char *basename);
-#endif
-
-#ifndef HAVE_STRLCPY
-size_t strlcpy(char *dst, const char *src, size_t siz);
-#endif
+int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
+int ssdp_poll(int timeout);
 
 #endif /* SSDP_H_ */

@@ -31,6 +31,11 @@ struct host {
 
 LIST_HEAD(, host) hl = LIST_HEAD_INITIALIZER();
 
+volatile sig_atomic_t running = 1;
+
+extern FILE *uget(char *url);
+
+
 static int host(char *name, char *url)
 {
 	struct host *h;
@@ -133,7 +138,6 @@ static int xml(char *buf, char *tagn, char *val, size_t vlen)
 	char tag[20];
 
 	len = snprintf(tag, sizeof(tag), "<%s>", tagn);
-//	printf("Looking for '%s' in: %s\n", tag, buf);
 	ptr = strstr(buf, tag);
 	if (!ptr)
 		return 0;
@@ -145,7 +149,6 @@ static int xml(char *buf, char *tagn, char *val, size_t vlen)
 		*end = 0;
 
 	strlcpy(val, ptr, vlen);
-//	printf(">> Found '%s': %s\n", tagn, val);
 
 	return 1;
 }
@@ -160,7 +163,6 @@ static void parse(FILE *fp, char **name, char **url)
 	memset(nm, 0, sizeof(nm));
 
 	while (fgets(buf, sizeof(buf), fp)) {
-//		printf("Checking XML for tags: '%s'\n", buf);
 		if (!nm[0] && xml(buf, "friendlyName", nm, sizeof(nm)))
 			*name = nm;
 		if (!uri[0] && xml(buf, "presentationURL", uri, sizeof(uri)))
@@ -171,7 +173,6 @@ static void parse(FILE *fp, char **name, char **url)
 	}
 }
 
-extern FILE *uget(char *url);
 static void printsrv(char *srv, char *loc)
 {
 	char *name = NULL, *url = NULL;
@@ -259,8 +260,8 @@ static void ssdp_read(int sd)
 
 static void bye(int signo)
 {
-	showcursor();
-	exit(0);
+	(void)signo;
+	running = 0;
 }
 
 int main(void)
@@ -271,48 +272,41 @@ int main(void)
 
 	signal(SIGINT, bye);
 
-	hidecursor();
-	progress();
-
 	if (ssdp_init(1, NULL, 0, ssdp_read) < 1)
 		return 1;
 
-	/* Initial scan */
+	hidecursor();
+	progress();
+
 	IFSOCK_FOREACH(ifs)
 		ssdp_scan(ifs->sd);
 
-	while (1) {
-		size_t ifnum;
-		int num;
+	while (running) {
+		progress();
 
-		ifnum = poll_init(pfd, NELEMS(pfd));
+		switch (ssdp_poll(100)) {
+		case -1:
+			if (errno == EINTR)
+				break;
 
-		num = poll(pfd, ifnum, 100);
-		if (num < 0)
-			continue;
+			err(1, "Unrecoverable error");
+			break;
 
-		if (num == 0) {
-			progress();
-
+		case 0:
 			if (!(throttle++ % 20)) {
 				IFSOCK_FOREACH(ifs)
 					ssdp_scan(ifs->sd);
 			}
-			continue;
-		}
+			break;
 
-		for (size_t i = 0; i < NELEMS(pfd); i++) {
-			if (pfd[i].revents & POLLNVAL ||
-			    pfd[i].revents & POLLHUP)
-				continue;
-
-			progress();
-			if (pfd[i].revents & POLLIN)
-				handle_message(pfd[i].fd);
+		default:
+			break;
 		}
 	}
 
-	return 0;
+	showcursor();
+
+	return ssdp_exit();
 }
 
 /**

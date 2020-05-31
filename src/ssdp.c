@@ -19,7 +19,7 @@
 
 LIST_HEAD(, ifsock) il = LIST_HEAD_INITIALIZER();
 
-struct ifsock *ifsock_iter(struct ifsock *this)
+struct ifsock *ssdp_iter(struct ifsock *this)
 {
 	if (!this)
 		return LIST_FIRST(&il);
@@ -30,7 +30,7 @@ struct ifsock *ifsock_iter(struct ifsock *this)
 	return NULL;
 }
 
-void mark(void)
+static void mark(void)
 {
 	struct ifsock *ifs;
 
@@ -42,7 +42,7 @@ void mark(void)
 	}
 }
 
-int sweep(void)
+static int sweep(void)
 {
 	struct ifsock *ifs, *tmp;
 	int modified = 0;
@@ -63,7 +63,7 @@ int sweep(void)
 }
 
 /* Find interface in same subnet as sa */
-struct ifsock *find_outbound(struct sockaddr *sa)
+struct ifsock *ssdp_find(struct sockaddr *sa)
 {
 	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
 	struct ifsock *ifs;
@@ -86,7 +86,7 @@ struct ifsock *find_outbound(struct sockaddr *sa)
 }
 
 /* Exact match, must be same ifaddr as sa */
-struct ifsock *find_iface(struct sockaddr *sa)
+static struct ifsock *find_iface(struct sockaddr *sa)
 {
 	struct sockaddr_in *addr = (struct sockaddr_in *)sa;
 	struct ifsock *ifs;
@@ -102,7 +102,7 @@ struct ifsock *find_iface(struct sockaddr *sa)
 	return NULL;
 }
 
-int filter_addr(struct sockaddr *sa)
+static int filter_addr(struct sockaddr *sa)
 {
 	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
 	struct ifsock *ifs;
@@ -119,7 +119,7 @@ int filter_addr(struct sockaddr *sa)
 	if (sin->sin_addr.s_addr == htonl(INADDR_LOOPBACK))
 		return 1;
 
-	ifs = find_outbound(sa);
+	ifs = ssdp_find(sa);
 	if (ifs) {
 		if (ifs->addr.sin_addr.s_addr != htonl(INADDR_ANY))
 			return 1;
@@ -128,7 +128,7 @@ int filter_addr(struct sockaddr *sa)
 	return 0;
 }
 
-int filter_iface(char *ifname, char *iflist[], size_t num)
+static int filter_iface(char *ifname, char *iflist[], size_t num)
 {
 	size_t i;
 
@@ -147,21 +147,7 @@ int filter_iface(char *ifname, char *iflist[], size_t num)
 	return 1;
 }
 
-int poll_init(struct pollfd pfd[], size_t num)
-{
-	struct ifsock *ifs;
-	size_t ifnum = 0;
-
-	LIST_FOREACH(ifs, &il, link) {
-		pfd[ifnum].fd     = ifs->sd;
-		pfd[ifnum].events = POLLIN;
-		ifnum++;
-	}
-
-	return ifnum;
-}
-
-void handle_message(int sd)
+static void handle_message(int sd)
 {
 	struct ifsock *ifs;
 
@@ -174,7 +160,38 @@ void handle_message(int sd)
 	}
 }
 
-int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
+int ssdp_poll(int timeout)
+{
+	struct pollfd pfd[MAX_NUM_IFACES];
+	struct ifsock *ifs;
+	size_t ifnum = 0;
+	int num;
+
+	LIST_FOREACH(ifs, &il, link) {
+		pfd[ifnum].fd     = ifs->sd;
+		pfd[ifnum].events = POLLIN;
+		ifnum++;
+	}
+
+	num = poll(pfd, ifnum, timeout);
+	if (num < 0)
+		return -1;
+	if (num == 0)
+		return 0;
+
+	for (size_t i = 0; i < ifnum; i++) {
+		if (pfd[i].revents & POLLNVAL ||
+		    pfd[i].revents & POLLHUP)
+			continue;
+
+		if (pfd[i].revents & POLLIN)
+			handle_message(pfd[i].fd);
+	}
+
+	return num;
+}
+
+int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
 {
 	struct sockaddr_in *address = (struct sockaddr_in *)addr;
 	struct sockaddr_in *netmask = (struct sockaddr_in *)mask;
@@ -199,7 +216,7 @@ int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (
 	return 0;
 }
 
-int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
+static int socket_open(char *ifname, struct sockaddr *addr, int port, int ttl)
 {
 	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
 	int sd, rc;
@@ -249,7 +266,7 @@ int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl)
 	return sd;
 }
 
-int close_socket(void)
+int ssdp_exit(void)
 {
 	struct ifsock *ifs, *tmp;
 	int ret = 0;
@@ -327,14 +344,14 @@ int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd))
 		if (filter_addr(ifa->ifa_addr))
 			continue;
 
-		sd = open_socket(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT, ttl);
+		sd = socket_open(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT, ttl);
 		if (sd < 0)
 			continue;
 
 		if (!multicast_join(sd, ifa->ifa_addr))
 			logit(LOG_DEBUG, "Joined group %s on interface %s", MC_SSDP_GROUP, ifa->ifa_name);
 
-		if (register_socket(sd, ifa->ifa_addr, ifa->ifa_netmask, cb)) {
+		if (ssdp_register(sd, ifa->ifa_addr, ifa->ifa_netmask, cb)) {
 			close(sd);
 			break;
 		}

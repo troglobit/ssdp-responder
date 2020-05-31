@@ -17,6 +17,12 @@
 
 #include "ssdp.h"
 
+char  server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
+char  hostname[64];
+char *ver = NULL;
+char *os  = NULL;
+char  uuid[42];
+
 static char *supported_types[] = {
 	SSDP_ST_ALL,
 	"upnp:rootdevice",
@@ -25,13 +31,10 @@ static char *supported_types[] = {
 	NULL
 };
 
-int      debug = 0;
-int      running = 1;
+volatile sig_atomic_t running = 1;
 
-char uuid[42];
-char hostname[64];
-char *os = NULL, *ver = NULL;
-char server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
+extern void web_init(void);
+
 
 static void compose_addr(struct sockaddr_in *sin, char *group, int port)
 {
@@ -124,7 +127,7 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 	struct sockaddr dest;
 	char host[NI_MAXHOST];
 	char buf[MAX_PKT_SIZE];
-	size_t i, len, note = 0;
+	size_t note = 0;
 	ssize_t num;
 	int s;
 
@@ -181,7 +184,7 @@ static void ssdp_recv(int sd)
 			char *ptr, *type;
 			size_t i;
 
-			ifs = find_outbound(&sa);
+			ifs = ssdp_find(&sa);
 			if (!ifs) {
 				logit(LOG_DEBUG, "No matching socket for client %s", inet_ntoa(sin->sin_addr));
 				return;
@@ -225,40 +228,18 @@ static void ssdp_recv(int sd)
 
 static void wait_message(time_t tmo)
 {
-	struct pollfd pfd[MAX_NUM_IFACES];
-	struct ifsock *ifs;
-	int num = 1, timeout;
-	size_t ifnum;
-
-	ifnum = poll_init(pfd, NELEMS(pfd));
-
 	while (1) {
-		size_t i;
+		int timeout;
 
 		timeout = tmo - time(NULL);
 		if (timeout < 0)
 			break;
 
-		num = poll(pfd, ifnum, timeout * 1000);
-		if (num < 0) {
-			if (EINTR == errno)
+		if (ssdp_poll(timeout * 1000) == -1) {
+			if (errno == EINTR)
 				break;
 
 			err(1, "Unrecoverable error");
-		}
-
-		if (num == 0)
-			break;
-
-		for (i = 0; num > 0 && i < ifnum; i++) {
-			if (pfd[i].revents & POLLNVAL ||
-			    pfd[i].revents & POLLHUP)
-				return;
-
-			if (pfd[i].revents & POLLIN) {
-				handle_message(pfd[i].fd);
-				num--;
-			}
 		}
 	}
 }
@@ -413,7 +394,8 @@ int main(int argc, char *argv[])
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
 	int ttl = MC_TTL_DEFAULT;
-	int i, c;
+	int debug = 0;
+	int c;
 
 	while ((c = getopt(argc, argv, "dhi:nr:t:v")) != EOF) {
 		switch (c) {
@@ -493,7 +475,7 @@ int main(int argc, char *argv[])
 	}
 
 	closelog();
-	return close_socket();
+	return ssdp_exit();
 }
 
 /**
