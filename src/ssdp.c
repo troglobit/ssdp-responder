@@ -78,6 +78,13 @@ static void mark(void)
 	struct ifsock *ifs;
 
 	LIST_FOREACH(ifs, &il, link) {
+		in_addr_t a, m;
+
+		a = ifs->addr.sin_addr.s_addr;
+		m = ifs->mask.sin_addr.s_addr;
+		if (a == htonl(INADDR_ANY) || m == htonl(INADDR_ANY))
+			continue;
+
 		if (ifs->sd != -1)
 			ifs->stale = 1;
 		else
