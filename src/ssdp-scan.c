@@ -275,7 +275,7 @@ static void bye(int signo)
 int main(int argc, char *argv[])
 {
 	struct pollfd pfd[MAX_NUM_IFACES];
-	int throttle = 0;
+	int throttle = 1;
 
 	atty = isatty(STDOUT_FILENO);
 	signal(SIGINT, bye);
