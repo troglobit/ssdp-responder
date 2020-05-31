@@ -130,6 +130,9 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa, so
 	ssize_t num;
 	int s;
 
+	if (ifs->addr.sin_addr.s_addr == htonl(INADDR_ANY))
+		return;
+
 	gethostname(hostname, sizeof(hostname));
 	s = getnameinfo((struct sockaddr *)&ifs->addr, sizeof(struct sockaddr_in), host, sizeof(host), NULL, 0, NI_NUMERICHOST);
 	if (s) {

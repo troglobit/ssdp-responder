@@ -199,7 +199,8 @@ int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*c
 	ifs->sd   = sd;
 	ifs->mod  = 1;
 	ifs->cb   = cb;
-	ifs->addr = *address;
+	if (address)
+		ifs->addr = *address;
 	if (mask)
 		ifs->mask = *netmask;
 	LIST_INSERT_HEAD(&il, ifs, link);
