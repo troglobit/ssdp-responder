@@ -3,7 +3,7 @@
 language: c
 
 # Workaoround for running tests that wget from localhost:8080
-dist: trusty
+#dist: trusty
 sudo: required
 group: deprecated-2017Q4
 
