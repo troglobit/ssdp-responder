@@ -16,7 +16,6 @@
  */
 
 #include <config.h>
-#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
@@ -198,19 +197,27 @@ void web_init(void)
 	sin->sin_port = htons(LOCATION_PORT);
 
 	sd = socket(sa.sa_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
-	if (sd == -1)
-		err(1, "Failed creating web socket");
+	if (sd == -1) {
+		logit(LOG_ERR, "Failed creating web socket: %s", strerror(errno));
+		return;
+	}
 
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEADDR);
 #ifdef SO_REUSEPORT
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
 #endif
 
-	if (bind(sd, &sa, sizeof(sa)) < 0)
-		err(1, "Failed binding web socket");
+	if (bind(sd, &sa, sizeof(sa)) < 0) {
+		logit(LOG_ERR, "Failed binding web socket: %s", strerror(errno));
+		close(sd);
+		return;
+	}
 
-	if (listen(sd, 10) != 0)
-		err(1, "Failed setting web listen backlog");
+	if (listen(sd, 10) != 0) {
+		logit(LOG_ERR, "Failed setting web listen backlog: %s", strerror(errno));
+		close(sd);
+		return;
+	}
 
 	ssdp_register(sd, &sa, NULL, web_recv);
 }
