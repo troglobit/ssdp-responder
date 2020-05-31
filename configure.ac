@@ -4,7 +4,7 @@ AM_INIT_AUTOMAKE([1.11 foreign])
 
 AC_CONFIG_SRCDIR([src/ssdpd.c])
 AC_CONFIG_HEADER([config.h])
-AC_CONFIG_FILES([Makefile src/Makefile ssdpd.service])
+AC_CONFIG_FILES([Makefile src/Makefile man/Makefile ssdpd.service])
 
 AC_PROG_CC
 AC_PROG_INSTALL

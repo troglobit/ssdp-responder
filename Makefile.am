@@ -1,5 +1,4 @@
-SUBDIRS        = src
-man8_MANS      = ssdpd.8
+SUBDIRS        = src man
 doc_DATA       = README.md LICENSE
 EXTRA_DIST     = README.md LICENSE
 
