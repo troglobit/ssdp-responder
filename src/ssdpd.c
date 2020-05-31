@@ -121,10 +121,9 @@ size_t pktlen(unsigned char *buf)
 	return strlen((char *)buf + hdr) + hdr;
 }
 
-static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
+static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa, socklen_t salen)
 {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-	struct sockaddr dest;
+	struct sockaddr_in dest;
 	char host[NI_MAXHOST];
 	char buf[MAX_PKT_SIZE];
 	size_t note = 0;
@@ -145,19 +144,20 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa)
 		type = NULL;
 
 	memset(buf, 0, sizeof(buf));
-	if (sin)
+	if (!sa)
 		compose_response(type, host, buf, sizeof(buf));
 	else
 		compose_notify(type, host, buf, sizeof(buf));
 
-	if (!sin) {
+	if (!sa) {
 		note = 1;
-		compose_addr((struct sockaddr_in *)&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
-		sin = (struct sockaddr_in *)&dest;
+		compose_addr(&dest, MC_SSDP_GROUP, MC_SSDP_PORT);
+		sa = (struct sockaddr *)&dest;
+		salen = sizeof(struct sockaddr_in);
 	}
 
 	logit(LOG_DEBUG, "Sending %s from %s ...", !note ? "reply" : "notify", host);
-	num = sendto(ifs->sd, buf, strlen(buf), 0, (struct sockaddr *)sin, sizeof(struct sockaddr_in));
+	num = sendto(ifs->sd, buf, strlen(buf), 0, sa, salen);
 	if (num < 0)
 		logit(LOG_WARNING, "Failed sending SSDP %s, type: %s: %s", !note ? "reply" : "notify", type, strerror(errno));
 }
@@ -195,7 +195,7 @@ static void ssdp_recv(int sd)
 			if (!type) {
 				logit(LOG_DEBUG, "No Search Type (ST:) found in M-SEARCH *, assuming " SSDP_ST_ALL);
 				type = SSDP_ST_ALL;
-				send_message(ifs, type, &sa);
+				send_message(ifs, type, &sa, salen);
 				return;
 			}
 
@@ -215,7 +215,7 @@ static void ssdp_recv(int sd)
 				if (!strcmp(supported_types[i], type)) {
 					logit(LOG_DEBUG, "M-SEARCH * ST: %s from %s port %d", type,
 					      inet_ntoa(sin->sin_addr), ntohs(sin->sin_port));
-					send_message(ifs, type, &sa);
+					send_message(ifs, type, &sa, salen);
 					return;
 				}
 			}
@@ -255,7 +255,7 @@ static void announce(struct ifsock *ifs, int mod)
 		if (!strcmp(supported_types[i], uuid))
 			continue;
 
-		send_message(ifs, supported_types[i], NULL);
+		send_message(ifs, supported_types[i], NULL, 0);
 	}
 }
 
