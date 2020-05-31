@@ -76,3 +76,37 @@ AC_SUBST(SBINDIR)
 
 # Create all config files
 AC_OUTPUT
+
+# Expand directories for configuration summary, unexpanded defaults:
+# sysconfdir  => ${prefix}/etc
+# runstatedir => ${localstatedir}/run
+SYSCONFDIR=`eval echo $sysconfdir`
+RUNSTATEDIR=`eval echo $runstatedir`
+RUNSTATEDIR=`eval echo $RUNSTATEDIR`
+
+cat <<EOF
+
+------------------ Summary ------------------
+ $PACKAGE_NAME version $PACKAGE_VERSION
+  Prefix.............: $prefix
+  Sysconfdir.........: $SYSCONFDIR
+  Runstatedir........: $RUNSTATEDIR
+  C Compiler.........: $CC $CFLAGS $CPPFLAGS $LDFLAGS $LIBS
+
+ Site specifics:
+  vendor.............: $vendor
+  vendor URL.........: $vendor_url
+  device model.......: $model
+
+ Optional features:
+  test mode..........: $enable_test_mode
+  systemd............: $with_systemd
+
+------------- Compiler version --------------
+$($CC --version || true)
+---------------------------------------------
+
+Check the above options and compile with:
+ ${MAKE-make}
+
+EOF
