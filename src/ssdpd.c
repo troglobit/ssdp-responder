@@ -223,89 +223,6 @@ static void ssdp_recv(int sd)
 	}
 }
 
-static int multicast_join(int sd, struct sockaddr *sa)
-{
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-	struct ip_mreq imr;
-
-	imr.imr_interface = sin->sin_addr;
-	imr.imr_multiaddr.s_addr = inet_addr(MC_SSDP_GROUP);
-        if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(imr))) {
-		if (EADDRINUSE == errno)
-			return 0;
-
-		logit(LOG_ERR, "Failed joining group %s: %s", MC_SSDP_GROUP, strerror(errno));
-		return -1;
-	}
-
-	return 0;
-}
-
-static int ssdp_init(int ttl, char *iflist[], size_t num)
-{
-	struct ifaddrs *ifaddrs, *ifa;
-	int modified;
-	size_t i;
-
-	logit(LOG_INFO, "Updating interfaces ...");
-
-	if (getifaddrs(&ifaddrs) < 0) {
-		logit(LOG_ERR, "Failed getifaddrs(): %s", strerror(errno));
-		return -1;
-	}
-
-	/* Mark all outbound interfaces as stale */
-	mark();
-
-	/* First pass, clear stale marker from exact matches */
-	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
-		struct ifsock *ifs;
-
-		/* Do we already have it? */
-		ifs = find_iface(ifa->ifa_addr);
-		if (ifs) {
-			ifs->stale = 0;
-			continue;
-		}
-	}
-
-	/* Clean out any stale interface addresses */
-	modified = sweep();
-
-	/* Second pass, add new ones */
-	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
-		int sd;
-
-		/* Interface filtering, optional command line argument */
-		if (filter_iface(ifa->ifa_name, iflist, num)) {
-			logit(LOG_DEBUG, "Skipping %s, not in iflist.", ifa->ifa_name);
-			continue;
-		}
-
-		/* Do we have another in the same subnet? */
-		if (filter_addr(ifa->ifa_addr))
-			continue;
-
-		sd = open_socket(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT, ttl);
-		if (sd < 0)
-			continue;
-
-		if (!multicast_join(sd, ifa->ifa_addr))
-			logit(LOG_DEBUG, "Joined group %s on interface %s", MC_SSDP_GROUP, ifa->ifa_name);
-
-		if (register_socket(sd, ifa->ifa_addr, ifa->ifa_netmask, ssdp_recv)) {
-			close(sd);
-			break;
-		}
-		logit(LOG_DEBUG, "Registered socket %d with ssd_recv() callback", sd);
-		modified++;
-	}
-
-	freeifaddrs(ifaddrs);
-
-	return modified;
-}
-
 static void wait_message(time_t tmo)
 {
 	struct pollfd pfd[MAX_NUM_IFACES];
@@ -562,7 +479,7 @@ int main(int argc, char *argv[])
 		now = time(NULL);
 
 		if (rtmo <= now) {
-			if (ssdp_init(ttl, &argv[optind], argc - optind) > 0)
+			if (ssdp_init(ttl, &argv[optind], argc - optind, ssdp_recv) > 0)
 				announce(1);
 			rtmo = now + refresh;
 		}

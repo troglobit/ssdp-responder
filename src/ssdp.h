@@ -113,6 +113,8 @@ int register_socket(int sd, struct sockaddr *addr, struct sockaddr *mask, void (
 int open_socket(char *ifname, struct sockaddr *addr, int port, int ttl);
 int close_socket(void);
 
+int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd));
+
 #ifndef HAVE_PIDFILE
 int pidfile(const char *basename);
 #endif
