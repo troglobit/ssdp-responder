@@ -19,8 +19,8 @@
 #include "ssdp.h"
 #include "queue.h"
 
-#define hidecursor()          fputs ("\e[?25l", stdout)
-#define showcursor()          fputs ("\e[?25h", stdout)
+#define hidecursor() if (atty) fputs ("\e[?25l", stdout)
+#define showcursor() if (atty) fputs ("\e[?25h", stdout)
 
 struct host {
 	LIST_ENTRY(host) link;
@@ -32,6 +32,7 @@ struct host {
 LIST_HEAD(, host) hl = LIST_HEAD_INITIALIZER();
 
 volatile sig_atomic_t running = 1;
+static int atty;
 
 extern FILE *uget(char *url);
 
@@ -69,6 +70,9 @@ static void progress(void)
 //	size_t num = 6;
 //	const char *style = ".oOOo.";
 	static unsigned int i = 0;
+
+	if (!atty)
+		return;
 
 //	printf("%u %% %zd = %lu (%u / %zd = %lu)\n", i, num, i % num, i, num, i / num);
 
@@ -273,6 +277,7 @@ int main(void)
 	struct pollfd pfd[MAX_NUM_IFACES];
 	int throttle = 0;
 
+	atty = isatty(STDOUT_FILENO);
 	signal(SIGINT, bye);
 	signal(SIGALRM, bye);
 
