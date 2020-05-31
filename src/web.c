@@ -186,17 +186,15 @@ void web_recv(int sd)
 
 void web_init(void)
 {
+	struct sockaddr_in sin;
 	int sd;
-	struct sockaddr sa;
-	struct sockaddr_in *sin;
 
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_family = AF_INET;
-	sin = (struct sockaddr_in *)&sa;
-	sin->sin_addr.s_addr = htonl(INADDR_ANY);
-	sin->sin_port = htons(LOCATION_PORT);
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family      = AF_INET;
+	sin.sin_addr.s_addr = htonl(INADDR_ANY);
+	sin.sin_port        = htons(LOCATION_PORT);
 
-	sd = socket(sa.sa_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
+	sd = socket(sin.sin_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 	if (sd == -1) {
 		logit(LOG_ERR, "Failed creating web socket: %s", strerror(errno));
 		return;
@@ -207,7 +205,7 @@ void web_init(void)
         ENABLE_SOCKOPT(sd, SOL_SOCKET, SO_REUSEPORT);
 #endif
 
-	if (bind(sd, &sa, sizeof(sa)) < 0) {
+	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 		logit(LOG_ERR, "Failed binding web socket: %s", strerror(errno));
 		close(sd);
 		return;
@@ -219,7 +217,7 @@ void web_init(void)
 		return;
 	}
 
-	ssdp_register(sd, &sa, NULL, web_recv);
+	ssdp_register(sd, (struct sockaddr *)&sin, NULL, web_recv);
 }
 
 /**
