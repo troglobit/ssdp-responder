@@ -272,7 +272,7 @@ static void bye(int signo)
 	running = 0;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	struct pollfd pfd[MAX_NUM_IFACES];
 	int throttle = 0;
@@ -284,15 +284,15 @@ int main(void)
 	log_level = LOG_WARNING;
 	log_init(0);
 
-	if (ssdp_init(1, 0, NULL, 0, ssdp_read) < 1)
+#ifdef TEST_MODE
+	alarm(2);
+#endif
+
+	if (ssdp_init(1, 0, &argv[1], argc - 1, ssdp_read) < 1)
 		return 1;
 
 	hidecursor();
 	progress();
-
-#ifdef TEST_MODE
-	alarm(1);
-#endif
 
 	ssdp_foreach(ssdp_scan, 1);
 
