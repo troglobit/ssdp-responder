@@ -11,6 +11,10 @@ the standard C library.  It has a built-in web server for serving the
 UPnP XML description which Windows use to present the icon, by default
 an InternetGatewayDevice is announced.
 
+Also included is the `ssdp-scan` tool, which continuously scans for
+SSDP capable hosts on the network.  Take care only to use this for
+debugging since it scans the network quite aggressively.
+
 
 Usage
 -----
