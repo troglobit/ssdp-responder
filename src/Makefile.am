@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = subdir-objects
-AM_CFLAGS        = -W -Wall -Wextra -Wno-unused
+AM_CFLAGS        = -W -Wall -Wextra -Wno-unused -std=c11
 AM_CPPFLAGS      = -D_GNU_SOURCE -DLOCALSTATEDIR=\"@localstatedir@\"
 
 bin_PROGRAMS     = ssdp-scan
