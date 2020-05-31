@@ -53,7 +53,11 @@
 #define MC_SSDP_GROUP        "239.255.255.250"
 #define MC_SSDP_PORT         1900
 #define MC_TTL_DEFAULT       2
-#define LOCATION_PORT        (MC_SSDP_PORT + 1)
+#ifndef TEST_MODE
+# define LOCATION_PORT       (MC_SSDP_PORT + 1)
+#else
+# define LOCATION_PORT       8080
+#endif
 #define LOCATION_DESC        "/description.xml"
 
 #define SSDP_ST_ALL          "ssdp:all"
