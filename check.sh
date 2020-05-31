@@ -39,8 +39,7 @@ PID=$!
 
 sleep 1
 
-wget http://127.0.0.1:8080/description.xml
-cat description.xml
+curl http://127.0.0.1:8080/description.xml
 
 ./src/ssdp-scan |grep $Q 127.0.0.1
 kill $PID
