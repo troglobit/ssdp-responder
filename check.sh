@@ -1,5 +1,6 @@
 #!/bin/sh
 IFCONF=`which ifconfig`
+LEVEL=warning
 PID=""
 Q=-q
 
@@ -17,6 +18,7 @@ cleanup()
 set -e
 if [ "x$V" = "x1" ]; then
     set -x
+    LEVEL=info
     Q=""
 fi
 
@@ -32,7 +34,7 @@ fi
 
 echo test
 
-./src/ssdpd -n $LOOPBACK &
+./src/ssdpd -l $LEVEL -n $LOOPBACK &
 PID=$!
 
 sleep 1
