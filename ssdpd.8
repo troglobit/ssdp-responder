@@ -59,6 +59,16 @@ TTL for multicast frames, default 2, according to the UPnP Device
 Architecture (UDA)
 .It Fl v
 Show program version
+.It Ar IFACE
+By default
+.Nm
+runs on all IPv4 capable interfaces, except loopback.  If interface
+names are given as arguments,
+.Nm
+will run only on them.  Interfaces are refrehed at runtime, so if
+an interface given on the command line does not exist at first,
+.Nm
+will add them later.
 .El
 .Sh FILES
 .Bl -tag -width /var/lib/misc/ssdpd.cache -compact
