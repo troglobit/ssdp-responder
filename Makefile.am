@@ -8,11 +8,7 @@ endif
 
 if TEST_MODE
 check: all
-	@echo "Loopback test ..."
-	@./src/ssdpd lo
-	@./src/ssdp-scan |grep -q 127.0.0.1
-	@killall ssdpd
-	@echo "Loopback test OK!"
+	@./check.sh
 else
 check:
 	@echo "Test mode disabled."
