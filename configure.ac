@@ -3,6 +3,8 @@ AC_INIT([ssdpd], [1.6-dev], [https://github.com/troglobit/ssdp-responder/issues]
 AC_CONFIG_AUX_DIR(aux)
 AM_INIT_AUTOMAKE([1.11 foreign])
 
+AM_SILENT_RULES([yes])
+
 AC_CONFIG_SRCDIR([src/ssdpd.c])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile src/Makefile man/Makefile ssdpd.service])
