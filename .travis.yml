@@ -2,8 +2,10 @@
 # Defaults to GNU GCC and autotools: ./configure && make && make test
 language: c
 
-# Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
-sudo: false
+# Workaoround for running tests that wget from localhost:8080
+dist: trusty
+sudo: required
+group: deprecated-2017Q4
 
 # Test build with both GCC and Clang (LLVM)
 compiler:
@@ -38,7 +40,8 @@ script:
   - ./autogen.sh
   - ./configure --prefix= --enable-test-mode
   - make V=1 clean
-  - make V=1 check
+  - make V=1 all
+  - sudo make V=1 check
   - make V=1 install-strip DESTDIR=~/tmp
   - tree -h ~/tmp
   - ldd ~/tmp/sbin/ssdpd
