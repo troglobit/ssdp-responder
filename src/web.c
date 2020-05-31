@@ -15,7 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
-#include <config.h>
+#include "config.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
@@ -57,8 +57,8 @@ extern char uuid[];
 /* Peek into SOCK_STREAM on accepted client socket to figure out inbound interface */
 static struct sockaddr_in *stream_peek(int sd, char *ifname, size_t iflen)
 {
-        struct ifaddrs *ifaddr, *ifa;
         static struct sockaddr_in sin;
+        struct ifaddrs *ifaddr, *ifa;
         socklen_t len = sizeof(sin);
 
         if (-1 == getsockname(sd, (struct sockaddr *)&sin, &len))
