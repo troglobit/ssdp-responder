@@ -18,7 +18,7 @@ cleanup()
 set -e
 if [ "x$V" = "x1" ]; then
     set -x
-    LEVEL=info
+    LEVEL=debug
     Q=""
 fi
 
