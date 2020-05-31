@@ -101,7 +101,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 		"\r\n";
 	char hostname[64], url[128] = "";
 	char mesg[1024], *reqline[3];
-	int rc, rcvd, fd, bytes_read;
+	int rc, rcvd;
 
 	/* Check for early disconnect or client timeout */
 	rc = poll(&pfd, 1, 1000);
