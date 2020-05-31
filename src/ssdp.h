@@ -58,8 +58,6 @@
 
 #define SSDP_ST_ALL          "ssdp:all"
 
-#define logit(lvl, fmt, args...) syslog(lvl, fmt, ##args)
-
 #define ENABLE_SOCKOPT(sd, level, opt)					\
         do {								\
                 int val = 1;						\
@@ -87,6 +85,13 @@ struct ifsock {
 
 	void (*cb)(int);
 };
+
+extern int log_level;
+extern int log_opts;
+
+void log_init(int enable);
+void log_exit(void);
+void logit(int severity, const char *format, ...);
 
 struct ifsock *ssdp_find(struct sockaddr *sa);
 void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg);

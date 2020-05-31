@@ -15,9 +15,48 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
+#include <stdarg.h>
 #include "ssdp.h"
 
 LIST_HEAD(, ifsock) il = LIST_HEAD_INITIALIZER();
+
+int log_level = LOG_NOTICE;
+int log_opts  = LOG_PID;
+int log_on    = 1;
+
+void log_init(int enable)
+{
+	if (!enable) {
+		log_on = 0;
+		return;
+	}
+
+        openlog(PACKAGE_NAME, log_opts, LOG_DAEMON);
+        setlogmask(LOG_UPTO(log_level));
+}
+
+void log_exit(void)
+{
+	if (!log_on)
+		return;
+	closelog();
+}
+
+void logit(int severity, const char *format, ...)
+{
+	va_list ap;
+
+	if (severity > log_level)
+		return;
+
+	va_start(ap, format);
+	if (!log_on) {
+		vfprintf(stderr, format, ap);
+		fputs("\n", stderr);
+	} else
+		vsyslog(severity, format, ap);
+	va_end(ap);
+}
 
 static void mark(void)
 {

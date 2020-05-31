@@ -281,6 +281,9 @@ int main(void)
 	signal(SIGINT, bye);
 	signal(SIGALRM, bye);
 
+	log_level = LOG_WARNING;
+	log_init(0);
+
 	if (ssdp_init(1, 0, NULL, 0, ssdp_read) < 1)
 		return 1;
 
@@ -315,6 +318,7 @@ int main(void)
 	}
 
 	showcursor();
+	log_exit();
 
 	return ssdp_exit();
 }

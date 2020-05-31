@@ -270,11 +270,8 @@ static void lsb_init(void)
 	FILE *fp;
 
 	fp = fopen(file, "r");
-	if (!fp) {
-	fallback:
-		logit(LOG_WARNING, "No %s found on system, using built-in server string.", file);
-		return;
-	}
+	if (!fp)
+		goto fallback;
 
 	while (fgets(line, sizeof(line), fp)) {
 		line[strlen(line) - 1] = 0;
@@ -295,11 +292,12 @@ static void lsb_init(void)
 	}
 	fclose(fp);
 
+fallback:
 	if (os && ver)
 		snprintf(server_string, sizeof(server_string), "%s/%s UPnP/1.0 %s/%s",
 			 os, ver, PACKAGE_NAME, PACKAGE_VERSION);
 	else
-		goto fallback;
+		logit(LOG_WARNING, "No %s found on system, using built-in server string.", file);
 
 	logit(LOG_DEBUG, "Server: %s", server_string);
 }
@@ -391,8 +389,6 @@ int main(int argc, char *argv[])
 {
 	time_t now, rtmo = 0, itmo = 0;
 	int background = 1;
-	int log_level = LOG_NOTICE;
-	int log_opts = LOG_CONS | LOG_PID;
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
 	int ttl = MC_TTL_DEFAULT;
@@ -451,9 +447,7 @@ int main(int argc, char *argv[])
 			err(1, "Failed daemonizing");
 	}
 
-        openlog(PACKAGE_NAME, log_opts, LOG_DAEMON);
-        setlogmask(LOG_UPTO(log_level));
-
+	log_init(1);
 	uuidgen();
 	lsb_init();
 	web_init();
@@ -479,8 +473,8 @@ int main(int argc, char *argv[])
 		wait_message(MIN(rtmo, itmo));
 	}
 
-	closelog();
 	lsb_exit();
+	log_exit();
 
 	return ssdp_exit();
 }
