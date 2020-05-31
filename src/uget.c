@@ -82,7 +82,7 @@ static int nslookup(char *server, uint16_t port, struct addrinfo **result)
 
 	rc = getaddrinfo(server, service, &hints, result);
 	if (rc) {
-		warnx("Failed looking up %s:%s: %s\n", server, service, gai_strerror(rc));
+		warnx("Failed looking up %s:%s: %s", server, service, gai_strerror(rc));
 		return -1;
 	}
 
