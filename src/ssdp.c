@@ -219,7 +219,6 @@ static int socket_open(char *ifname, struct sockaddr *addr, int port, int ttl)
 {
 	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
 	int sd, rc;
-	char loop;
 
 	sd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (sd < 0)
@@ -234,14 +233,6 @@ static int socket_open(char *ifname, struct sockaddr *addr, int port, int ttl)
 	if (rc < 0) {
 		close(sd);
 		logit(LOG_ERR, "Failed setting multicast TTL: %s", strerror(errno));
-		return -1;
-	}
-
-	loop = 0;
-	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
-	if (rc < 0) {
-		close(sd);
-		logit(LOG_ERR, "Failed disabing multicast loop: %s", strerror(errno));
 		return -1;
 	}
 
@@ -278,6 +269,22 @@ int ssdp_exit(void)
 	}
 
 	return ret;
+}
+
+/*
+ * This one differs between BSD and Linux in that on BSD this
+ * disables looping multicast back to all *other* sockets on
+ * this machine.  Whereas Linux only disables looping it on
+ * the given socket ... please prove me wrong.  --Troglobit
+ */
+static void multicast_loop(int sd)
+{
+	char loop = 0;
+	int rc;
+
+	rc = setsockopt(sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
+	if (rc < 0)
+		logit(LOG_WARNING, "Failed disabing multicast loop: %s", strerror(errno));
 }
 
 static int multicast_join(int sd, struct sockaddr *sa)
@@ -346,6 +353,10 @@ int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd))
 		sd = socket_open(ifa->ifa_name, ifa->ifa_addr, MC_SSDP_PORT, ttl);
 		if (sd < 0)
 			continue;
+
+#ifdef __linux__
+		multicast_loop(sd);
+#endif
 
 		if (!multicast_join(sd, ifa->ifa_addr))
 			logit(LOG_DEBUG, "Joined group %s on interface %s", MC_SSDP_GROUP, ifa->ifa_name);
