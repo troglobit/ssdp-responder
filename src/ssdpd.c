@@ -265,6 +265,7 @@ static void announce(struct ifsock *ifs, int mod)
 static void lsb_init(void)
 {
 	const char *file = "/etc/lsb-release";
+	int severity = LOG_DEBUG;
 	char line[80];
 	char *ptr;
 	FILE *fp;
@@ -296,10 +297,12 @@ fallback:
 	if (os && ver)
 		snprintf(server_string, sizeof(server_string), "%s/%s UPnP/1.0 %s/%s",
 			 os, ver, PACKAGE_NAME, PACKAGE_VERSION);
-	else
+	else {
 		logit(LOG_WARNING, "No %s found on system, using built-in server string.", file);
+		severity = LOG_WARNING;
+	}
 
-	logit(LOG_DEBUG, "Server: %s", server_string);
+	logit(severity, "Server: %s", server_string);
 }
 
 static void lsb_exit(void)
