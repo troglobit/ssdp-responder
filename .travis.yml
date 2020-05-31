@@ -36,9 +36,9 @@ addons:
 # so we must customize the default build script to run ./autogen.sh
 script:
   - ./autogen.sh
-  - ./configure --prefix=
+  - ./configure --prefix= --enable-test-mode
   - make clean
-  - make -j5
+  - make check
   - DESTDIR=~/tmp make install-strip
   - tree -h ~/tmp
   - ldd ~/tmp/sbin/ssdpd

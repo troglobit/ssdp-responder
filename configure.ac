@@ -39,6 +39,7 @@ AC_ARG_WITH([systemd],
 
 AS_IF([test "x$enable_test_mode" == "xyes"], [
 	AC_DEFINE(TEST_MODE, 1, [Loopback test mode])])
+AM_CONDITIONAL([TEST_MODE], [test "x$enable_test_mode" == "xyes"])
 
 AS_IF([test "x$with_vendor_url" != "xno" -a "x$with_vendor_url" != "xyes"], [
 	AC_DEFINE_UNQUOTED(MANUFACTURER_URL, "$with_vendor_url", [Manufacturer URL in XML])])

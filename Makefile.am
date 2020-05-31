@@ -6,6 +6,18 @@ if HAVE_SYSTEMD
 systemd_DATA   = ssdpd.service
 endif
 
+if TEST_MODE
+check: all
+	@echo "Loopback test ..."
+	@./src/ssdpd lo
+	@./src/ssdp-scan |grep -q 127.0.0.1
+	@killall ssdpd
+	@echo "Loopback test OK!"
+else
+check:
+	@echo "Test mode disabled."
+endif
+
 release: distcheck
 	@for file in $(DIST_ARCHIVES); do	\
 		md5sum $$file > ../$$file.md5;	\
