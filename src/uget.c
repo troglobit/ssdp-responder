@@ -183,10 +183,8 @@ FILE *uget(char *url)
 		return NULL;
 
 	sd = hello(ai, port, location);
-	if (-1 == sd) {
-		warn("uget %s from %s:%d", location, server, port);
+	if (-1 == sd)
 		return NULL;
-	}
 
 	fp = tmpfile();
 	while ((num = recv(sd, buf, sizeof(buf) - 1, 0)) > 0) {
