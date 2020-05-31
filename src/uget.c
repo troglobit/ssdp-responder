@@ -146,6 +146,10 @@ static int hello(struct addrinfo *ai, uint16_t port, char *location)
 		if (connect(sd, rp->ai_addr, rp->ai_addrlen) != -1)
 			break;	/* Success */
 
+		sin = (struct sockaddr_in *)rp->ai_addr;
+		inet_ntop(AF_INET, &sin->sin_addr, host, sizeof(host));
+		warn("Failed connecting to %s:%d", host, ntohs(sin->sin_port));
+
 		close(sd);
 	}
 
@@ -179,7 +183,7 @@ FILE *uget(char *url)
 
 	sd = hello(ai, port, location);
 	if (-1 == sd) {
-		warn("Failed connecting to %s:%d", server, port);
+		warn("uget %s from %s:%d", location, server, port);
 		return NULL;
 	}
 
