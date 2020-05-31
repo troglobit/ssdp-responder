@@ -39,7 +39,7 @@ PID=$!
 
 sleep 1
 
-curl http://127.0.0.1:8080/description.xml
+[ -z "$Q" ] && curl http://127.0.0.1:8080/description.xml
 
 ./src/ssdp-scan $LOOPBACK |grep $Q 127.0.0.1
 kill $PID
