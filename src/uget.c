@@ -132,9 +132,15 @@ static int hello(struct addrinfo *ai, uint16_t port, char *location)
 	int sd;
 
 	for (rp = ai; rp != NULL; rp = rp->ai_next) {
+		struct timeval timeout = { 0, 200000 };
+
 		sd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (sd == -1)
 			continue;
+
+		/* Attempt to adjust recv timeout */
+		if (setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+			warn("Failed setting recv() timeout");
 
 		if (connect(sd, rp->ai_addr, rp->ai_addrlen) != -1)
 			break;	/* Success */
