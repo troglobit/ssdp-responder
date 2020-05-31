@@ -15,6 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
+#include <sys/utsname.h>	/* uname() for !__linux__ */
 #include "ssdp.h"
 
 char  server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
@@ -271,8 +272,17 @@ static void lsb_init(void)
 	FILE *fp;
 
 	fp = fopen(file, "r");
-	if (!fp)
+	if (!fp) {
+#ifndef __linux__
+		struct utsname uts;
+
+		if (!uname(&uts)) {
+			os  = strdup(uts.sysname);
+			ver = strdup(uts.release);
+		}
+#endif
 		goto fallback;
+	}
 
 	while (fgets(line, sizeof(line), fp)) {
 		line[strlen(line) - 1] = 0;
