@@ -274,12 +274,17 @@ int main(void)
 	int throttle = 0;
 
 	signal(SIGINT, bye);
+	signal(SIGALRM, bye);
 
 	if (ssdp_init(1, NULL, 0, ssdp_read) < 1)
 		return 1;
 
 	hidecursor();
 	progress();
+
+#ifdef TEST_MODE
+	alarm(1);
+#endif
 
 	ssdp_foreach(ssdp_scan, 1);
 

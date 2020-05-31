@@ -19,17 +19,26 @@ AC_REPLACE_FUNCS([pidfile strlcpy utimensat])
 AC_CONFIG_LIBOBJ_DIR([lib])
 
 # Options
+AC_ARG_ENABLE(test-mode,
+        AS_HELP_STRING([--enable-test-mode], [Enable loopback test mode]),, [enable_test_mode=no])
+
 AC_ARG_WITH([vendor],
 	AS_HELP_STRING([--with-vendor=VENDOR], [Set a custom vendor string]),
 	[vendor=$withval], [vendor="Troglobit Software Systems"])
+
 AC_ARG_WITH([vendor-url],
 	AS_HELP_STRING([--with-vendor-url=VENDOR], [Set vendor URL]))
+
 AC_ARG_WITH([model],
 	AS_HELP_STRING([--with-model=MODEL], [Set a custom model string]),
 	[model=$withval], [model="Generic"])
+
 AC_ARG_WITH([systemd],
      [AS_HELP_STRING([--with-systemd=DIR], [Directory for systemd service files])],,
      [with_systemd=auto])
+
+AS_IF([test "x$enable_test_mode" == "xyes"], [
+	AC_DEFINE(TEST_MODE, 1, [Loopback test mode])])
 
 AS_IF([test "x$with_vendor_url" != "xno" -a "x$with_vendor_url" != "xyes"], [
 	AC_DEFINE_UNQUOTED(MANUFACTURER_URL, "$with_vendor_url", [Manufacturer URL in XML])])

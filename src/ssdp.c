@@ -105,8 +105,10 @@ static int filter_addr(struct sockaddr *sa)
 	if (sin->sin_addr.s_addr == htonl(INADDR_ANY))
 		return 1;
 
+#ifndef TEST_MODE
 	if (sin->sin_addr.s_addr == htonl(INADDR_LOOPBACK))
 		return 1;
+#endif
 
 	ifs = ssdp_find(sa);
 	if (ifs) {
