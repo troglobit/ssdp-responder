@@ -37,9 +37,9 @@ addons:
 script:
   - ./autogen.sh
   - ./configure --prefix= --enable-test-mode
-  - make clean
-  - make check
-  - DESTDIR=~/tmp make install-strip
+  - make V=1 clean
+  - make V=1 check
+  - make V=1 install-strip DESTDIR=~/tmp
   - tree -h ~/tmp
   - ldd ~/tmp/sbin/ssdpd
   - size ~/tmp/sbin/ssdpd
