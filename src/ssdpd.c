@@ -310,6 +310,14 @@ static void lsb_init(void)
 	logit(LOG_DEBUG, "Server: %s", server_string);
 }
 
+static void lsb_exit(void)
+{
+	if (os)
+		free(os);
+	if (ver)
+		free(ver);
+}
+
 /* https://en.wikipedia.org/wiki/Universally_unique_identifier */
 static void uuidgen(void)
 {
@@ -475,6 +483,8 @@ int main(int argc, char *argv[])
 	}
 
 	closelog();
+	lsb_exit();
+
 	return ssdp_exit();
 }
 
