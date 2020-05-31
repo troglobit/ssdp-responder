@@ -88,10 +88,8 @@ struct ifsock {
 	void (*cb)(int);
 };
 
-#define IFSOCK_FOREACH(ifs) for (ifs = NULL; (ifs = ssdp_iter(ifs));)
-
-struct ifsock *ssdp_iter(struct ifsock *ifs);
 struct ifsock *ssdp_find(struct sockaddr *sa);
+void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg);
 
 int ssdp_init(int ttl, char *iflist[], size_t num, void (*cb)(int sd));
 int ssdp_exit(void);

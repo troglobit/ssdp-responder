@@ -19,17 +19,6 @@
 
 LIST_HEAD(, ifsock) il = LIST_HEAD_INITIALIZER();
 
-struct ifsock *ssdp_iter(struct ifsock *this)
-{
-	if (!this)
-		return LIST_FIRST(&il);
-
-	if (this != LIST_END(&il))
-		return LIST_NEXT(this, link);
-
-	return NULL;
-}
-
 static void mark(void)
 {
 	struct ifsock *ifs;
@@ -214,6 +203,14 @@ int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*c
 	LIST_INSERT_HEAD(&il, ifs, link);
 
 	return 0;
+}
+
+void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg)
+{
+	struct ifsock *ifs;
+
+	LIST_FOREACH(ifs, &il, link)
+		cb(ifs, arg);
 }
 
 static int socket_open(char *ifname, struct sockaddr *addr, int port, int ttl)

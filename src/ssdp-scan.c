@@ -77,12 +77,16 @@ static void progress(void)
 	fflush(stdout);
 }
 
-static void ssdp_scan(int sd)
+static void ssdp_scan(struct ifsock *ifs, int arg)
 {
 	struct sockaddr_in sin;
 	ssize_t num;
 	char buf[200];
 	int len;
+
+	(void)arg;
+	if (!ifs || ifs->sd == -1)
+		return;
 
 	memset(buf, 0, sizeof(buf));
 	len = snprintf(buf, sizeof(buf), "M-SEARCH * HTTP/1.1\r\n"
@@ -99,7 +103,7 @@ static void ssdp_scan(int sd)
 	sin.sin_port        = htons(MC_SSDP_PORT);
 	sin.sin_addr.s_addr = inet_addr(MC_SSDP_GROUP);
 
-	num = sendto(sd, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin));
+	num = sendto(ifs->sd, buf, len, 0, (struct sockaddr *)&sin, sizeof(sin));
 	if (num < 0)
 		warn("Failed sending SSDP M-SEARCH");
 }
@@ -267,7 +271,6 @@ static void bye(int signo)
 int main(void)
 {
 	struct pollfd pfd[MAX_NUM_IFACES];
-	struct ifsock *ifs;
 	int throttle = 0;
 
 	signal(SIGINT, bye);
@@ -278,8 +281,7 @@ int main(void)
 	hidecursor();
 	progress();
 
-	IFSOCK_FOREACH(ifs)
-		ssdp_scan(ifs->sd);
+	ssdp_foreach(ssdp_scan, 1);
 
 	while (running) {
 		progress();
@@ -293,10 +295,8 @@ int main(void)
 			break;
 
 		case 0:
-			if (!(throttle++ % 20)) {
-				IFSOCK_FOREACH(ifs)
-					ssdp_scan(ifs->sd);
-			}
+			if (!(throttle++ % 20))
+				ssdp_foreach(ssdp_scan, 0);
 			break;
 
 		default:

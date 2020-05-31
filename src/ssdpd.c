@@ -244,27 +244,18 @@ static void wait_message(time_t tmo)
 	}
 }
 
-static void announce(int mod)
+static void announce(struct ifsock *ifs, int mod)
 {
-	struct ifsock *ifs;
+	if (mod && !ifs->mod)
+		return;
+	ifs->mod = 0;
 
-	logit(LOG_INFO, "Sending SSDP NOTIFY new:%d ...", mod);
-
-	IFSOCK_FOREACH(ifs) {
-		size_t i;
-
-		if (mod && !ifs->mod)
+	for (size_t i = 0; supported_types[i]; i++) {
+		/* UUID sent in SSDP_ST_ALL, first announce */
+		if (!strcmp(supported_types[i], uuid))
 			continue;
-		ifs->mod = 0;
 
-//		send_search(ifs, "upnp:rootdevice");
-		for (i = 0; supported_types[i]; i++) {
-			/* UUID sent in SSDP_ST_ALL, first announce */
-			if (!strcmp(supported_types[i], uuid))
-				continue;
-
-			send_message(ifs, supported_types[i], NULL);
-		}
+		send_message(ifs, supported_types[i], NULL);
 	}
 }
 
@@ -469,13 +460,16 @@ int main(int argc, char *argv[])
 		now = time(NULL);
 
 		if (rtmo <= now) {
-			if (ssdp_init(ttl, &argv[optind], argc - optind, ssdp_recv) > 0)
-				announce(1);
+			if (ssdp_init(ttl, &argv[optind], argc - optind, ssdp_recv) > 0) {
+				logit(LOG_INFO, "Sending SSDP NOTIFY on new interfaces ...");
+				ssdp_foreach(announce, 1);
+			}
 			rtmo = now + refresh;
 		}
 
 		if (itmo <= now) {
-			announce(0);
+			logit(LOG_INFO, "Sending SSDP NOTIFY ...");
+			ssdp_foreach(announce, 0);
 			itmo = now + interval;
 		}
 
