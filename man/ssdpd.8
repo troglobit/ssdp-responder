@@ -20,8 +20,9 @@
 .Nd Simple Service Discovery Protocol daemon
 .Sh SYNOPSIS
 .Nm
-.Op Fl dhnv
+.Op Fl hnsv
 .Op Fl i Ar SEC
+.Op Fl l Ar LEVEL
 .Op Fl r Ar SEC
 .Op Fl t Ar TTL
 .Op Ar IFACE Op Ar IFACE Op Ar ...
@@ -43,17 +44,37 @@ to determine the distribution name and version, which along with the
 system hostname, is periodically transmitted in SSDP multicast discovery
 frames.
 .Sh OPTIONS
-.Bl -tag -width "-r SEC " -compact
-.It Fl d
-Developer debug mode
+.Bl -tag -width "-l LEVEL " -compact
 .It Fl h
 Show program help text
 .It Fl i Ar SEC
 SSDP notify interval (30-900), default 300 sec
+.It Fl l Ar LEVEL
+Set log level to one of the following, default
+.Nm notice :
+.Pp
+.Bl -tag -width WARNING -compact -offset indent
+.It Cm none
+Disable all logging
+.It Cm error
+Error conditions
+.It Cm warning
+Warning conditions
+.It Cm notice
+Normal but significant condition (default)
+.It Cm info
+Informational
+.It Cm debug
+Debug-level messages
+.El
+.Pp
 .It Fl n
 Run in foreground, do not daemonize by default
 .It Fl r Ar SEC
 Interface refresh interval (5-1800), default 600 sec
+.It Fl s
+Use syslog, default unless running in foreground,
+.Fl n .
 .It Fl t Ar TTL
 TTL for multicast frames, default 2, according to the UPnP Device
 Architecture (UDA)
@@ -80,6 +101,7 @@ Queried for information on the distribution name (id) and release
 Cached value of generated UUID, may be wiped by the system on reboot
 .El
 .Sh SEE ALSO
+.Xr ssdp-scan 1
 .Xr avahi-daemon 8
 .Xr lldpd 8
 .Sh AUTHORS

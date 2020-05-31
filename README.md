@@ -20,17 +20,19 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-dhnv] [-i SEC] [-r SEC] [-t TTL ][IFACE [IFACE ...]]
+Usage: ssdpd [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [IFACE [IFACE ...]]
 
-    -d        Developer debug mode
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
+    -l LVL    Set log level: none, err, notice (default), info, debug
     -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
+    -s        Use syslog, default unless running in foreground, -n
     -t TTL    TTL for multicast frames, default 2, according to the UDA
     -v        Show program version
 
-Bug report address: https://github.com/troglobit/ssdp-responder/issues
+Bug report address : https://github.com/troglobit/ssdp-responder/issues
+Project homepage   : https://github.com/troglobit/ssdp-responder
 ```
 
 See `configure --help` for some build time options.
