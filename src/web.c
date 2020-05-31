@@ -217,7 +217,12 @@ void web_init(void)
 		return;
 	}
 
-	ssdp_register(sd, (struct sockaddr *)&sin, NULL, web_recv);
+	if (!ssdp_register(sd, (struct sockaddr *)&sin, NULL, web_recv)) {
+		char host[20];
+
+		inet_ntop(AF_INET, &sin.sin_addr, host, sizeof(host));
+		logit(LOG_INFO, "Listening to HTTP connections on %s:%d", host, ntohs(sin.sin_port));
+	}
 }
 
 /**
