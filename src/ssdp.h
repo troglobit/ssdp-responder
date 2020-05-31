@@ -91,6 +91,7 @@ extern int log_opts;
 
 void log_init(int enable);
 void log_exit(void);
+int log_str2lvl(char *level);
 void logit(int severity, const char *format, ...);
 
 struct ifsock *ssdp_find(struct sockaddr *sa);

@@ -367,13 +367,14 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-dhv] [-i SEC] [-r SEC] [-t TTL] [IFACE [IFACE ...]]\n"
+	printf("Usage: %s [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [IFACE [IFACE ...]]\n"
 	       "\n"
-	       "    -d        Developer debug mode\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
+	       "    -l LVL    Set log level: none, err, notice (default), info, debug\n"
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
+	       "    -s        Use syslog, default unless running in foreground, -n\n"
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
 	       "    -v        Show program version\n"
 	       "\n"
@@ -392,15 +393,11 @@ int main(int argc, char *argv[])
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
 	int ttl = MC_TTL_DEFAULT;
-	int debug = 0;
+	int do_syslog = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "dhi:nr:t:v")) != EOF) {
+	while ((c = getopt(argc, argv, "hi:l:nr:st:v")) != EOF) {
 		switch (c) {
-		case 'd':
-			debug = 1;
-			break;
-
 		case 'h':
 			return usage(0);
 
@@ -410,14 +407,25 @@ int main(int argc, char *argv[])
 				errx(1, "Invalid announcement interval (30-900).");
 			break;
 
+		case 'l':
+			log_level = log_str2lvl(optarg);
+			if (-1 == log_level)
+				return usage(1);
+			break;
+
 		case 'n':
 			background = 0;
+			do_syslog--;
 			break;
 
 		case 'r':
 			refresh = atoi(optarg);
 			if (refresh < 5 || refresh > 1800)
 				errx(1, "Invalid refresh interval (5-1800).");
+			break;
+
+		case 's':
+			do_syslog++;
 			break;
 
 		case 't':
@@ -437,17 +445,12 @@ int main(int argc, char *argv[])
 
 	signal_init();
 
-        if (debug) {
-		log_level = LOG_DEBUG;
-                log_opts |= LOG_PERROR;
-	}
-
 	if (background) {
 		if (daemon(0, 0))
 			err(1, "Failed daemonizing");
 	}
 
-	log_init(1);
+	log_init(do_syslog);
 	uuidgen();
 	lsb_init();
 	web_init();

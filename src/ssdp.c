@@ -15,6 +15,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
+#define SYSLOG_NAMES
 #include <stdarg.h>
 #include "ssdp.h"
 
@@ -40,6 +41,20 @@ void log_exit(void)
 	if (!log_on)
 		return;
 	closelog();
+}
+
+int log_str2lvl(char *level)
+{
+    int i;
+
+    for (i = 0; prioritynames[i].c_name; i++) {
+	size_t len = MIN(strlen(prioritynames[i].c_name), strlen(level));
+
+	if (!strncasecmp(prioritynames[i].c_name, level, len))
+	    return prioritynames[i].c_val;
+    }
+
+    return atoi(level);
 }
 
 void logit(int severity, const char *format, ...)
