@@ -68,7 +68,7 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname, size_t iflen)
                 return NULL;
 
         for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-                size_t len = sizeof(struct in_addr);
+                size_t inlen = sizeof(struct in_addr);
                 struct sockaddr_in *iin;
 
                 if (!ifa->ifa_addr)
@@ -78,7 +78,7 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname, size_t iflen)
                         continue;
 
                 iin = (struct sockaddr_in *)ifa->ifa_addr;
-                if (!memcmp(&sin.sin_addr, &iin->sin_addr, len)) {
+                if (!memcmp(&sin.sin_addr, &iin->sin_addr, inlen)) {
                         strlcpy(ifname, ifa->ifa_name, iflen);
                         break;
                 }
