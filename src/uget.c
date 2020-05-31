@@ -174,7 +174,6 @@ FILE *uget(char *url)
 	int header = 1;
 	int sd;
 
-	warnx("uget %s ...", url);
 	split(url, &server, &port, &location);
 	if (!server || !location)
 		return NULL;
