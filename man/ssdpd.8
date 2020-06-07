@@ -37,12 +37,18 @@ standard C library.  It has a built-in web server for serving the UPnP
 XML description which Windows use to present the icon, by default an
 InternetGatewayDevice is announced.
 .Pp
+On Linux systems,
 .Nm
 reads
-.Pa /etc/lsb-release
-to determine the distribution name and version, which along with the
-system hostname, is periodically transmitted in SSDP multicast discovery
-frames.
+.Pa /etc/os-release ,
+or
+.Pa /etc/lsb-release ,
+in that order to determine the distribution name and version, which
+along with the system hostname, is periodically transmitted in SSDP
+multicast discovery frames.  If neither file exists a built-in default
+is used as server string.  On non-Linux systems the information from
+.Xr uname 1
+is used, since that is the canonical UNIX location for such information.
 .Sh OPTIONS
 .Bl -tag -width "-l LEVEL " -compact
 .It Fl h
@@ -95,8 +101,16 @@ will add them later.
 .Bl -tag -width /var/lib/misc/ssdpd.cache -compact
 .It Pa /run/ssdpd.pid
 PID file, created as soon as all setup is complete
+.It Pa /etc/os-release
+Linux standard base release information.  Primarily used to figure out
+distribution name and release version
 .It Pa /etc/lsb-release
-Queried for information on the distribution name (id) and release
+If
+.Pa /etc/os-release
+does not exist,
+.Nm
+falls back to query this non-standard file for information on the
+distribution name and release version
 .It Pa /var/lib/misc/ssdpd.cache
 Cached value of generated UUID, may be wiped by the system on reboot
 .El
