@@ -263,6 +263,61 @@ static void announce(struct ifsock *ifs, int mod)
 	}
 }
 
+static char *strip_quotes(char *str)
+{
+	char *ptr;
+
+	if (!str)
+		return NULL;
+	while (*str && isspace(*str))
+		str++;
+	if (*str == '"')
+		str++;
+
+	ptr = str;
+	while (*ptr && !isspace(*ptr) && *ptr != '"')
+		ptr++;
+	*ptr = 0;
+
+	return str;
+}
+
+static int os_init(void)
+{
+	const char *file = "/etc/os-release";
+	char line[80];
+	FILE *fp;
+
+	fp = fopen(file, "r");
+	if (!fp)
+		return 1;
+
+	while (fgets(line, sizeof(line), fp)) {
+		char *ptr;
+
+		line[strlen(line) - 1] = 0;
+
+		if (!strncmp(line, "NAME", 4) && (ptr = strchr(line, '='))) {
+			logit(LOG_DEBUG, "Found NAME:%s", ptr + 1);
+			if (os)
+				free(os);
+			os = strdup(strip_quotes(++ptr));
+		}
+
+		if (!strncmp(line, "VERSION_ID", 10) && (ptr = strchr(line, '='))) {
+			logit(LOG_DEBUG, "Found VERSION_ID:%s", ptr + 1);
+			if (ver)
+				free(ver);
+			ver = strdup(strip_quotes(++ptr));
+		}
+	}
+
+	logit(LOG_DEBUG, "Found os:%s ver:%s", os, ver);
+	fclose(fp);
+
+	return 0;
+}
+
 static void lsb_init(void)
 {
 	const char *file = "/etc/lsb-release";
@@ -270,6 +325,9 @@ static void lsb_init(void)
 	char line[80];
 	char *ptr;
 	FILE *fp;
+
+	if (!os_init())
+		goto fallback;
 
 	fp = fopen(file, "r");
 	if (!fp) {
