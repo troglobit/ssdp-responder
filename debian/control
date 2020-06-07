@@ -11,7 +11,7 @@ Vcs-Browser: https://github.com/troglobit/ssdp-responder/commits/
 Package: ssdpd
 Suggests: mdns-scan
 Conflicts: avahi-daemon
-Depends: ${shlibs:Depends}, ${misc:Depends}, libssdpd1 (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Architecture: any
 Description: SSDP responder for Linux
  ssdpd is a stand-alone UNIX daemon with no external dependencies but
@@ -21,7 +21,7 @@ Description: SSDP responder for Linux
 
 Package: ssdp-scan
 Suggests: ssdpd
-Depends: ${shlibs:Depends}, ${misc:Depends}, libssdpd1 (= ${binary:Version})
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Architecture: any
 Description: scan for SSDP capable devices on attached networks
  ssdp-scan is a companion tool to ssdpd, but can also be used stand-alone
