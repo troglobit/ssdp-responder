@@ -9,6 +9,10 @@ ssdpd.postinst.debhelper
 ssdpd.postrm.debhelper
 ssdpd.prerm.debhelper
 ssdpd/*
-ssdp-scan.*
+ssdp-scan.debhelper.log
+ssdp-scan.substvars
+ssdp-scan.postinst.debhelper
+ssdp-scan.postrm.debhelper
+ssdp-scan.prerm.debhelper
 ssdp-scan/
 tmp/
