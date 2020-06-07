@@ -7,4 +7,4 @@ ssdp-responder (1.6) stable; urgency=low
   * Add systemd unit file
   * Initial Debian/Ubuntu packaging
 
- -- Joachim Nilsson <troglobit@gmail.com>  Sun, 31 May 2020 13:11:18 +0200
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 07 Jun 2020 13:34:02 +0200
