@@ -14,9 +14,9 @@ check:
 	@echo "Test mode disabled."
 endif
 
-# lintian --profile debian -i -I --show-overrides ../$PKG.changes
+## Generate .deb package
 package:
-	dpkg-buildpackage -uc -us -B
+	@debuild -uc -us -B --lintian-opts --profile debian -i -I --show-overrides
 
 ## Check if tagged in git
 release-hook:
