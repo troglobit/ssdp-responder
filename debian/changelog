@@ -1,3 +1,13 @@
+ssdp-responder (1.7) unstable; urgency=medium
+
+  * Use /etc/os-release as base for SSDP server string, distribution
+    release information is primarily stored in this file, some Linux
+    systems still use /etc/lsb-release, on real UNIX systems we can
+    use uname(1).
+  * Update ssdpd(8) man page
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 07 Jun 2020 16:40:44 +0200
+
 ssdp-responder (1.6) stable; urgency=low
 
   * Fix #1: CVE-2019-14323
