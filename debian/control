@@ -9,8 +9,7 @@ Vcs-Git: https://github.com/troglobit/ssdp-responder.git
 Vcs-Browser: https://github.com/troglobit/ssdp-responder/commits/
 
 Package: ssdpd
-Suggests: mdns-scan
-Conflicts: avahi-daemon
+Suggests: ssdp-scan
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Architecture: any
 Description: SSDP responder for Linux
