@@ -384,7 +384,7 @@ static void lsb_exit(void)
 /* https://en.wikipedia.org/wiki/Universally_unique_identifier */
 static void uuidgen(void)
 {
-	const char *file = _PATH_VARDB PACKAGE_NAME ".cache";
+	const char *file = "/var/lib/misc/" PACKAGE_NAME ".cache";
 	char buf[42];
 	FILE *fp;
 
