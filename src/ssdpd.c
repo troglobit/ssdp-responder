@@ -148,7 +148,7 @@ static void send_message(struct ifsock *ifs, char *type, struct sockaddr *sa, so
 		type = NULL;
 
 	memset(buf, 0, sizeof(buf));
-	if (!sa)
+	if (sa)
 		compose_response(type, host, buf, sizeof(buf));
 	else
 		compose_notify(type, host, buf, sizeof(buf));
