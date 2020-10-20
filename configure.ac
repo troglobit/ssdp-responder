@@ -9,8 +9,29 @@ AC_CONFIG_SRCDIR([src/ssdpd.c])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile src/Makefile man/Makefile ssdpd.service])
 
+# Check for standard programs, headers, and functions
 AC_PROG_CC
 AC_PROG_INSTALL
+
+# Check build host, differnt for each operating system
+AC_CANONICAL_HOST
+
+case $host_os in
+    netbsd*|openbsd*|freebsd*|dragonfly*|solaris*)
+	vardb=db
+	;;
+    linux*)
+	vardb=lib/misc
+	CPPFLAGS="-D_GNU_SOURCE"
+	;;
+    *)
+	vardb=tmp
+	;;
+esac
+
+AC_SUBST(vardb)
+
+# Required to check for libsystemd-dev
 PKG_PROG_PKG_CONFIG
 
 # Check if some func is not in libc

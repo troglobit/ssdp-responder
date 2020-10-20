@@ -49,7 +49,7 @@ static pid_t pidfile_pid  = 0;
 
 static void pidfile_cleanup(void);
 
-const  char *__pidfile_path = LOCALSTATEDIR "/run";
+const  char *__pidfile_path = _PIDFILEDIR;
 const  char *__pidfile_name = NULL;
 
 int

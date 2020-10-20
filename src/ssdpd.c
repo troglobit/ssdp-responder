@@ -381,17 +381,37 @@ static void lsb_exit(void)
 		free(ver);
 }
 
+/*
+ * _CACHEDIR is the configurable fallback.  We only read that, if it
+ * exists, otherwise we use the system _PATH_VARDB, which works on all
+ * *BSD and GLIBC based Linux systems.  Some Linux systms don't have the
+ * correct FHS /var/lib/misc for that define, so we check for that too.
+ */
+static FILE *fopen_cache(char *mode, const char **file)
+{
+	static char fn[80];
+
+	*file = fn,
+	snprintf(fn, sizeof(fn), _CACHEDIR "/" PACKAGE_NAME ".cache");
+	if (access(fn, R_OK | W_OK)) {
+		if (!access(_PATH_VARDB, W_OK))
+			snprintf(fn, sizeof(fn), "%s/" PACKAGE_NAME ".cache", _PATH_VARDB);
+	}
+
+	return fopen(fn, mode);
+}
+
 /* https://en.wikipedia.org/wiki/Universally_unique_identifier */
 static void uuidgen(void)
 {
-	const char *file = "/var/lib/misc/" PACKAGE_NAME ".cache";
+	const char *file;
 	char buf[42];
 	FILE *fp;
 
-	fp = fopen(file, "r");
+	fp = fopen_cache("r", &file);
 	if (!fp) {
 	generate:
-		fp = fopen(file, "w");
+		fp = fopen_cache("w", &file);
 		if (!fp)
 			logit(LOG_WARNING, "Cannot create UUID cache, %s: %s", file, strerror(errno));
 

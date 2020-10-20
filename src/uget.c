@@ -209,7 +209,7 @@ FILE *uget(char *url)
 	return fp;
 }
 
-#ifndef LOCALSTATEDIR
+#ifndef _CACHEDIR
 static int usage(void)
 {
 	printf("Usage: uget URL\n");
