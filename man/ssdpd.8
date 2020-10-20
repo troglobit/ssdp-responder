@@ -49,6 +49,17 @@ multicast discovery frames.  If neither file exists a built-in default
 is used as server string.  On non-Linux systems the information from
 .Xr uname 1
 is used, since that is the canonical UNIX location for such information.
+.Pp
+Each SSDP capable device on a LAN has its own UUID.  This is generated
+the first time
+.Nm
+is started and then stored in
+.Pa /var/lib/misc/ssdpd.cache ,
+on *BSD systems it is stored in
+.Pa /var/db/ssdpd.cache .
+Note, depending on your system this directory may be wiped on reboot, so
+.Nm
+may start up with a different UUID every time.
 .Sh OPTIONS
 .Bl -tag -width "-l LEVEL " -compact
 .It Fl h
@@ -112,7 +123,9 @@ does not exist,
 falls back to query this non-standard file for information on the
 distribution name and release version
 .It Pa /var/lib/misc/ssdpd.cache
-Cached value of generated UUID, may be wiped by the system on reboot
+Cached UUID (Linux), may be wiped by the system on reboot
+.It Pa /var/db/ssdpd.cache
+Cached UUID (*BSD), may be wiped by the system on reboot
 .El
 .Sh SEE ALSO
 .Xr ssdp-scan 1
