@@ -109,6 +109,7 @@ AC_OUTPUT
 # sysconfdir  => ${prefix}/etc
 # runstatedir => ${localstatedir}/run
 SYSCONFDIR=`eval echo $sysconfdir`
+LOCALSTATEDIR=`eval echo $localstatedir`
 RUNSTATEDIR=`eval echo $runstatedir`
 RUNSTATEDIR=`eval echo $RUNSTATEDIR`
 
@@ -116,9 +117,9 @@ cat <<EOF
 
 ------------------ Summary ------------------
  $PACKAGE_NAME version $PACKAGE_VERSION
-  Prefix.............: $prefix
-  Sysconfdir.........: $SYSCONFDIR
-  Runstatedir........: $RUNSTATEDIR
+  Install prefix.....: $prefix
+  PID file...........: $RUNSTATEDIR/ssdpd.pid
+  UUID cache file....: $LOCALSTATEDIR/$vardb/ssdpd.cache
   C Compiler.........: $CC $CFLAGS $CPPFLAGS $LDFLAGS $LIBS
 
  Site specifics:
