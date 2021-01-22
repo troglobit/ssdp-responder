@@ -90,7 +90,7 @@ AS_IF([test "x$with_systemd" != "xno"],
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemd" != "xno"])
 
 # Expand variables early, for systemd unit file and others
-test "x$prefix" = "xNONE" && prefix=
+test "x$prefix" = "xNONE" && prefix=/usr/local
 test "x$exec_prefix" = "xNONE" && exec_prefix='${prefix}'
 
 SBINDIR=`eval echo $sbindir`
