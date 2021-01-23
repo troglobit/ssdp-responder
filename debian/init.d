@@ -11,69 +11,83 @@
 . /lib/lsb/init-functions
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
-DAEMON=/usr/sbin/ssdpd
-OPTS="--quiet --pidfile /var/run/$NAME.pid --exec $DAEMON"
-NAME=ssdpd
 DESC="SSDP Responder"
-rc=255
+NAME=ssdpd
 
-test -x $DAEMON || exit 0
+DAEMON=/usr/sbin/ssdpd
+PIDFILE=/var/run/$NAME.pid
+
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Common start-stop-demon options
+OPTS="--quiet --pidfile  --exec $DAEMON"
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# Define LSB log_* functions.
+. /lib/lsb/init-functions
+
+do_start()
+{
+        start-stop-daemon --start --oknodo $OPTS -- $SSDPD_OPTIONS
+}
+
+do_stop()
+{
+        start-stop-daemon --stop --oknodo --signal $1 $OPTS
+}
 
 case "$1" in
     start)
-        echo -n "Starting $DESC: "
-        modprobe ipip 2> /dev/null || true
-        start-stop-daemon --start --oknodo $OPTS
-	rc=$?
-        echo "$NAME."
+        log_daemon_msg "Starting $DESC" "$NAME"
+        do_start
+        case "$?" in
+                0) sendsigs_omit
+                   log_end_msg 0 ;;
+                1) log_progress_msg "already started"
+                   log_end_msg 0 ;;
+                *) log_end_msg 1 ;;
+        esac
         ;;
 
     stop)
-        echo -n "Stopping $DESC: "
-        start-stop-daemon --stop --oknodo $OPTS
-	rc=$?
-        echo "$NAME."
+        log_daemon_msg "Stopping $DESC" "$NAME"
+        do_stop TERM
+        case "$?" in
+                0) log_end_msg 0 ;;
+                1) log_progress_msg "already stopped"
+                   log_end_msg 0 ;;
+                *) log_end_msg 1 ;;
+        esac
         ;;
 
     reload|force-reload)
-        echo -n "Reloading $DESC: "
-        start-stop-daemon --stop --signal HUP $OPTS
-	rc=$?
-        echo "$NAME."
+        log_daemon_msg "Stopping $DESC" "$NAME"
+        do_stop HUP
+        case "$?" in
+                0) log_end_msg 0 ;;
+                1) log_progress_msg "already stopped"
+                   log_end_msg 0 ;;
+                *) log_end_msg 1 ;;
+        esac
         ;;
 
     restart)
-        echo -n "Restarting $DESC: "
-        start-stop-daemon --stop --oknodo $OPTS
-        sleep 1
-        start-stop-daemon --start $OPTS --exec $DAEMON
-	rc=$?
-        echo "$NAME."
+        $0 stop
+        $0 start
         ;;
 
     status)
-        start-stop-daemon --status $OPTS
-	rc=$?
-	case "$rc" in
-            0)
-		echo "Program '$NAME' is running."
-		;;
-            1)
-		echo "Program '$NAME' is not running, yet the PID file exists."
-		;;
-            3)
-		echo "Program '$NAME' is not running."
-		;;
-            4)
-		echo "Unable to determine program '$NAME' status."
-		;;
-	esac
+        status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
 	;;
 
     *)
-        N=/etc/init.d/$NAME
-        echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
-	rc=1
+        echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload|status}" >&2
+	exit 3
         ;;
 esac
 
