@@ -19,9 +19,6 @@ PIDFILE=/var/run/$NAME.pid
 
 SCRIPTNAME=/etc/init.d/$NAME
 
-# Common start-stop-demon options
-OPTS="--quiet --pidfile  --exec $DAEMON"
-
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
@@ -31,52 +28,33 @@ OPTS="--quiet --pidfile  --exec $DAEMON"
 # Define LSB log_* functions.
 . /lib/lsb/init-functions
 
-do_start()
-{
-        start-stop-daemon --start --oknodo $OPTS -- $SSDPD_OPTIONS
-}
-
-do_stop()
-{
-        start-stop-daemon --stop --oknodo --signal $1 $OPTS
-}
-
 case "$1" in
     start)
         log_daemon_msg "Starting $DESC" "$NAME"
-        do_start
+	start-stop-daemon --start --quiet --pidfile $PIDFILE \
+			  --exec $DAEMON -- $SSDPD_OPTIONS
         case "$?" in
-                0) sendsigs_omit
-                   log_end_msg 0 ;;
-                1) log_progress_msg "already started"
-                   log_end_msg 0 ;;
-                *) log_end_msg 1 ;;
+            0) sendsigs_omit
+               log_end_msg 0 ;;
+            1) log_progress_msg "already started"
+               log_end_msg 0 ;;
+            *) log_end_msg 1 ;;
         esac
         ;;
 
     stop)
         log_daemon_msg "Stopping $DESC" "$NAME"
-        do_stop TERM
+	start-stop-daemon --stop --oknodo --quiet --pidfile $PIDFILE \
+			  --exec $DAEMON
         case "$?" in
-                0) log_end_msg 0 ;;
-                1) log_progress_msg "already stopped"
-                   log_end_msg 0 ;;
-                *) log_end_msg 1 ;;
+            0) log_end_msg 0 ;;
+            1) log_progress_msg "already stopped"
+               log_end_msg 0 ;;
+            *) log_end_msg 1 ;;
         esac
         ;;
 
-    reload|force-reload)
-        log_daemon_msg "Stopping $DESC" "$NAME"
-        do_stop HUP
-        case "$?" in
-                0) log_end_msg 0 ;;
-                1) log_progress_msg "already stopped"
-                   log_end_msg 0 ;;
-                *) log_end_msg 1 ;;
-        esac
-        ;;
-
-    restart)
+    restart|force-reload)
         $0 stop
         $0 start
         ;;
@@ -86,7 +64,7 @@ case "$1" in
 	;;
 
     *)
-        echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload|status}" >&2
+        echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|status}" >&2
 	exit 3
         ;;
 esac
