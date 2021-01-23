@@ -387,15 +387,12 @@ static void lsb_exit(void)
  * *BSD and GLIBC based Linux systems.  Some Linux systms don't have the
  * correct FHS /var/lib/misc for that define, so we check for that too.
  */
-static FILE *fopen_cache(char *mode, const char **file)
+static FILE *fopen_cache(char *mode, char *fn, size_t len)
 {
-	static char fn[80];
-
-	*file = fn,
-	snprintf(fn, sizeof(fn), _CACHEDIR "/" PACKAGE_NAME ".cache");
+	snprintf(fn, len, _CACHEDIR "/" PACKAGE_NAME ".cache");
 	if (access(fn, R_OK | W_OK)) {
 		if (!access(_PATH_VARDB, W_OK))
-			snprintf(fn, sizeof(fn), "%s/" PACKAGE_NAME ".cache", _PATH_VARDB);
+			snprintf(fn, len, "%s/" PACKAGE_NAME ".cache", _PATH_VARDB);
 	}
 
 	return fopen(fn, mode);
@@ -404,14 +401,14 @@ static FILE *fopen_cache(char *mode, const char **file)
 /* https://en.wikipedia.org/wiki/Universally_unique_identifier */
 static void uuidgen(void)
 {
-	const char *file;
+	char file[256];
 	char buf[42];
 	FILE *fp;
 
-	fp = fopen_cache("r", &file);
+	fp = fopen_cache("r", file, sizeof(file));
 	if (!fp) {
 	generate:
-		fp = fopen_cache("w", &file);
+		fp = fopen_cache("w", file, sizeof(file));
 		if (!fp)
 			logit(LOG_WARNING, "Cannot create UUID cache, %s: %s", file, strerror(errno));
 
