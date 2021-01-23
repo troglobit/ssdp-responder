@@ -12,50 +12,69 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/ssdpd
+OPTS="--quiet --pidfile /var/run/$NAME.pid --exec $DAEMON"
 NAME=ssdpd
-DESC=ssdpd
+DESC="SSDP Responder"
+rc=255
 
 test -x $DAEMON || exit 0
 
-set -e
-
 case "$1" in
-        start)
-                echo -n "Starting $DESC: "
-                start-stop-daemon --start --quiet --pidfile /var/run/$NAME.pid \
-                        --exec $DAEMON
-                echo "$NAME."
-                ;;
+    start)
+        echo -n "Starting $DESC: "
+        modprobe ipip 2> /dev/null || true
+        start-stop-daemon --start --oknodo $OPTS
+	rc=$?
+        echo "$NAME."
+        ;;
 
-        stop)
-                echo -n "Stopping $DESC: "
-                start-stop-daemon --stop --quiet --oknodo --pidfile /var/run/$NAME.pid \
-                        --exec $DAEMON
-                echo "$NAME."
-                ;;
+    stop)
+        echo -n "Stopping $DESC: "
+        start-stop-daemon --stop --oknodo $OPTS
+	rc=$?
+        echo "$NAME."
+        ;;
 
-        reload|force-reload)
-                echo -n "Reloading $DESC: "
-                start-stop-daemon --stop --signal 1 --quiet --pidfile /var/run/$NAME.pid \
-                        --exec $DAEMON
-                echo "$NAME."
-                ;;
+    reload|force-reload)
+        echo -n "Reloading $DESC: "
+        start-stop-daemon --stop --signal HUP $OPTS
+	rc=$?
+        echo "$NAME."
+        ;;
 
-        restart)
-                echo -n "Restarting $DESC: "
-                start-stop-daemon --stop --quiet --pidfile \
-                        /var/run/$NAME.pid --exec $DAEMON
-                sleep 1
-                start-stop-daemon --start --quiet --pidfile \
-                        /var/run/$NAME.pid --exec $DAEMON
-                echo "$NAME."
-                ;;
+    restart)
+        echo -n "Restarting $DESC: "
+        start-stop-daemon --stop --oknodo $OPTS
+        sleep 1
+        start-stop-daemon --start $OPTS --exec $DAEMON
+	rc=$?
+        echo "$NAME."
+        ;;
 
-        *)
-                N=/etc/init.d/$NAME
-                echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
-                exit 1
-                ;;
+    status)
+        start-stop-daemon --status $OPTS
+	rc=$?
+	case "$rc" in
+            0)
+		echo "Program '$NAME' is running."
+		;;
+            1)
+		echo "Program '$NAME' is not running, yet the PID file exists."
+		;;
+            3)
+		echo "Program '$NAME' is not running."
+		;;
+            4)
+		echo "Unable to determine program '$NAME' status."
+		;;
+	esac
+	;;
+
+    *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
+	rc=1
+        ;;
 esac
 
-exit 0
+exit $rc
