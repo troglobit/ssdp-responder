@@ -20,9 +20,9 @@ package:
 
 ## Check if tagged in git
 release-hook:
-	if [ "x`git tag -l $(PACKAGE_VERSION)|grep $(PACKAGE_VERSION)`" = "x" ]; then	\
+	if [ "x`git tag -l v$(PACKAGE_VERSION)|grep v$(PACKAGE_VERSION)`" = "x" ]; then	\
 		echo;									\
-		printf "\e[1m\e[41mCannot find release tag $(PACKAGE_VERSION)\e[0m\n";	\
+		printf "\e[1m\e[41mCannot find release tag v$(PACKAGE_VERSION)\e[0m\n";	\
 		printf "\e[1m\e[5mDo release anyway?\e[0m "; read yorn;			\
 		if [ "$$yorn" != "y" -a "$$yorn" != "Y" ]; then				\
 			printf "OK, aborting release.\n";				\
@@ -31,7 +31,7 @@ release-hook:
 		echo;									\
 	else										\
 		echo;									\
-		printf "\e[1m\e[42mFound GIT release tag $(PACKAGE_VERSION)\e[0m\n";	\
+		printf "\e[1m\e[42mFound GIT release tag v$(PACKAGE_VERSION)\e[0m\n";	\
 		printf "\e[1m\e[44m>>Remember to push tags!\e[0m\n";			\
 		echo;									\
 	fi
