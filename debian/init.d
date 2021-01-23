@@ -34,8 +34,7 @@ case "$1" in
 	start-stop-daemon --start --quiet --pidfile $PIDFILE \
 			  --exec $DAEMON -- $SSDPD_OPTIONS
         case "$?" in
-            0) sendsigs_omit
-               log_end_msg 0 ;;
+            0) log_end_msg 0 ;;
             1) log_progress_msg "already started"
                log_end_msg 0 ;;
             *) log_end_msg 1 ;;
