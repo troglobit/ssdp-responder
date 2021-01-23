@@ -8,8 +8,10 @@ ssdp-responder (1.8) stable; urgency=medium
     operating system specific /var/lib/misc or /var/db
   * Update man page with info on UUID cache location
   * Workaround for `--runstatedir` on systems with older autoconf
+  * Add missing systemd unit file
+  * Add missing SysV init script
 
- -- Joachim Wiberg <troglobit@gmail.com>  Sat, 23 Jan 2021 13:48:16 +0100
+ -- Joachim Wiberg <troglobit@gmail.com>  Sat, 23 Jan 2021 17:39:33 +0100
 
 ssdp-responder (1.7) unstable; urgency=medium
 
