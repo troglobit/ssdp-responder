@@ -1,3 +1,16 @@
+ssdp-responder (1.8) stable; urgency=medium
+
+  * Fix avahi-daemon (mDNS) conflict, no conflict with SSDP, caused
+    by copy-paste between mdnsd and project and this
+  * Fix default install prefix, should be GNU /usr/local not /.  The
+    default for Debian systems is /usr
+  * Use UUID cache directory from configure script, with fall-back to
+    operating system specific /var/lib/misc or /var/db
+  * Update man page with info on UUID cache location
+  * Workaround for `--runstatedir` on systems with older autoconf
+
+ -- Joachim Wiberg <troglobit@gmail.com>  Sat, 23 Jan 2021 13:48:16 +0100
+
 ssdp-responder (1.7) unstable; urgency=medium
 
   * Use /etc/os-release as base for SSDP server string, distribution
