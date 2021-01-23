@@ -3,11 +3,11 @@ Upstream-Name: ssdp-responder
 Source: https://github.com/troglobit/ssdp-responder
 
 Files: *
-Copyright: 2017-2020  Joachim Nilsson <troglobit@gmail.com>
+Copyright: 2017-2021  Joachim Wiberg <troglobit@gmail.com>
 License: ISC
 
 Files: debian/*
-Copyright: Copyright 2020  Joachim Nilsson <troglobit@gmail.com>
+Copyright: Copyright 2021  Joachim Wiberg <troglobit@gmail.com>
 License: ISC
 
 License: ISC
