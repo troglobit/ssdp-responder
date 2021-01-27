@@ -89,16 +89,18 @@ AS_IF([test "x$with_systemd" != "xno"],
      [AC_SUBST([systemddir], [$with_systemd])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemd" != "xno"])
 
-# Expand variables early, for systemd unit file and others
-test "x$prefix" = "xNONE" && prefix=/usr/local
+# Expand $sbindir early, into $SBINDIR, for systemd unit file
+# NOTE: This does *not* take prefix/exec_prefix override at "make
+#       install" into account, unfortunately.
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
 test "x$exec_prefix" = "xNONE" && exec_prefix='${prefix}'
 
 SBINDIR=`eval echo $sbindir`
 SBINDIR=`eval echo $SBINDIR`
 AC_SUBST(SBINDIR)
 
-# Workaround for as-of-yet unreleased runstatedir support, planned for
-# autoconf 2.70, which some major distros have backported.
+# Workaround for autoconf < 2.70, although some major distros have
+# backported support for runstatedir already.
 AS_IF([test -z "$runstatedir"], runstatedir="$localstatedir/run")
 AC_SUBST(runstatedir)
 
