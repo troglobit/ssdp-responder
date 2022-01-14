@@ -389,13 +389,17 @@ static void lsb_exit(void)
  */
 static FILE *fopen_cache(char *mode, char *fn, size_t len)
 {
+	FILE *fp;
+
 	snprintf(fn, len, _CACHEDIR "/" PACKAGE_NAME ".cache");
-	if (access(fn, R_OK | W_OK)) {
-		if (!access(_PATH_VARDB, W_OK))
-			snprintf(fn, len, "%s/" PACKAGE_NAME ".cache", _PATH_VARDB);
+	fp = fopen(fn,mode);
+
+	if (!fp) {
+		snprintf(fn, len, "%s/" PACKAGE_NAME ".cache", _PATH_VARDB);
+		fp = fopen(fn,mode);
 	}
 
-	return fopen(fn, mode);
+	return fp;
 }
 
 /* https://en.wikipedia.org/wiki/Universally_unique_identifier */
