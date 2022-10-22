@@ -1,5 +1,5 @@
 .\"                                                              -*- nroff -*-
-.\" Copyright (c) 2017-2021  Joachim Wiberg <troglobit@gmail.com>
+.\" Copyright (c) 2017-2022  Joachim Wiberg <troglobit@gmail.com>
 .\"
 .\" Permission to use, copy, modify, and/or distribute this software for any
 .\" purpose with or without fee is hereby granted, provided that the above
@@ -12,7 +12,7 @@
 .\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
-.Dd Jan 23, 2021
+.Dd Oct 22, 2022
 .Dt ssdpd 8
 .Os
 .Sh NAME
@@ -53,7 +53,7 @@ is used, since that is the canonical UNIX location for such information.
 Each SSDP capable device on a LAN has its own UUID.  This is generated
 the first time
 .Nm
-is started and then stored in
+is started and stored in
 .Pa /var/lib/misc/ssdpd.cache ,
 on *BSD systems it is stored in
 .Pa /var/db/ssdpd.cache .
