@@ -4,6 +4,23 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v1.9][] - 2022-10-22
+---------------------
+
+### Changes
+ - Use `$ac_default_prefix` instead of `/usr/local` in configure script
+   when expanding paths
+ - Update copyright years (affects LICENSE file hash)
+ - Add ChangeLog to project
+ - Drop Travis-CI in favor of GitHub Actions
+
+### Fixes
+ - Fix #6: workaround for OpenVPN /32 default server setup
+ - Fix #9: time-of-check vs time-of-use issue with caching of UUID,
+   found by Coverity Scan, fixed by Raul Porancea
+ - Fix #10: basic instructions for building and starting the daemon
+
+
 [v1.8][] - 2021-01-23
 ---------------------
 
@@ -125,6 +142,7 @@ v1.0 - 2017-05-11
 Initial release
 
 
+[v1.9]: https://github.com/troglobit/ssdp-responder/compare/v1.8...v1.9
 [v1.8]: https://github.com/troglobit/ssdp-responder/compare/v1.7...v1.8
 [v1.7]: https://github.com/troglobit/ssdp-responder/compare/v1.6...v1.7
 [v1.6]: https://github.com/troglobit/ssdp-responder/compare/v1.5...v1.6
