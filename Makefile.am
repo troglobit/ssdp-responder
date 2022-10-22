@@ -1,6 +1,6 @@
 SUBDIRS        = src man
-doc_DATA       = README.md LICENSE
-EXTRA_DIST     = README.md LICENSE
+doc_DATA       = README.md ChangeLog.md LICENSE
+EXTRA_DIST     = README.md ChangeLog.md LICENSE
 
 if HAVE_SYSTEMD
 systemd_DATA   = ssdpd.service
