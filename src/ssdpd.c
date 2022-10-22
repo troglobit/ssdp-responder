@@ -392,11 +392,10 @@ static FILE *fopen_cache(char *mode, char *fn, size_t len)
 	FILE *fp;
 
 	snprintf(fn, len, _CACHEDIR "/" PACKAGE_NAME ".cache");
-	fp = fopen(fn,mode);
-
+	fp = fopen(fn, mode);
 	if (!fp) {
 		snprintf(fn, len, "%s/" PACKAGE_NAME ".cache", _PATH_VARDB);
-		fp = fopen(fn,mode);
+		fp = fopen(fn, mode);
 	}
 
 	return fp;
