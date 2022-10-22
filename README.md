@@ -54,6 +54,60 @@ ssdpd -i 30 -r 300 eth1
 ```
 
 
+Configure & Build
+-----------------
+
+The GNU Configure & Build system use `/usr/local` as the default install
+prefix.  In many cases this is useful, but this means the configuration
+files, cache, and PID files will also use that prefix.  Most users have
+come to expect those files in `/etc/` and `/var/` and configure has a
+few useful options that are recommended to use.  Hence, you may want to
+use something like this:
+
+    ./configure --prefix=/usr --sysconfdir=/etc --runstatedir=/var/run
+    make -j$(($(nproc) + 1))
+    sudo make install-strip
+
+Usually your system reserves `/usr` for native pacakges, so most users
+drop `--prefix`, installing to `/usr/local`, or use `--prefix=/opt`.
+
+**Note:** On some systems `--runstatedir` may not be available in the
+  configure script, try `--localstatedir=/var` instead.
+
+### Building from GIT
+
+The `configure` script and the `Makefile.in` files are generated and not
+stored in GIT.  So if you checkout the sources from GitHub you first
+need to generated these files using `./autogen.sh`.
+
+### Static Build
+
+Some people want to build statically, to do this with `autoconf` add the
+following `LDFLAGS=` *after* the configure script.  You may also need to
+add `LIBS=...`, which will depend on your particular system:
+
+    ./configure LDFLAGS="-static" ...
+
+
+Integration with systemd
+------------------------
+
+For systemd integration `libsystemd-dev` and `pkg-config` are required.
+When the unit file is installed, `systemctl` can be used to enable and
+start the daemon:
+
+    $ sudo systemctl enable ssdpd.service
+    $ sudo systemctl start  ssdpd.service
+
+Check that it started properly by inspecting the system log, or:
+
+    $ sudo systemctl status ssdpd.service
+
+To stop the service:
+
+    $ sudo systemctl stop   ssdpd.service
+
+
 Origin
 ------
 
