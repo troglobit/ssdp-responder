@@ -42,10 +42,10 @@ jobs:
           tree ~/tmp
           ldd ~/tmp/sbin/ssdpd
           size ~/tmp/sbin/ssdpd
-          ldd ~/tmp/sbin/ssdp-scan
-          size ~/tmp/sbin/ssdp-scan
+          ldd ~/tmp/bin/ssdp-scan
+          size ~/tmp/bin/ssdp-scan
           ~/tmp/sbin/ssdpd -h
-          ~/tmp/sbin/ssdp-scan -h
+          ~/tmp/bin/ssdp-scan -h
       - name: Distcheck
         run: |
           make distcheck
