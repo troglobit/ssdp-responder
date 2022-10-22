@@ -34,6 +34,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <net/if.h>		/* IFF_POINTOPOINT */
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>

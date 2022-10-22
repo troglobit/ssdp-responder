@@ -414,6 +414,17 @@ int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 		if (filter_addr(ifa->ifa_addr))
 			continue;
 
+		/* OpenVPN workaround, issue #6 */
+		if ((ifa->ifa_flags & IFF_POINTOPOINT) && !strncmp(ifa->ifa_name, "tun", 3)) {
+			if (ifa->ifa_netmask && ifa->ifa_addr->sa_family == AF_INET) {
+				struct sockaddr_in *sin_mask = (struct sockaddr_in *)ifa->ifa_netmask;
+
+				/* Override /32, user likely has a /24 route to this interface */
+				if (sin_mask->sin_addr.s_addr == htonl(INADDR_BROADCAST))
+					sin_mask->sin_addr.s_addr = htonl(IN_CLASSC_NET);
+			}
+		}
+
 		sd = socket_open(ifa->ifa_name, ifa->ifa_addr, ttl, srv);
 		if (sd < 0)
 			continue;
