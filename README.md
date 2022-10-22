@@ -74,11 +74,19 @@ drop `--prefix`, installing to `/usr/local`, or use `--prefix=/opt`.
 **Note:** On some systems `--runstatedir` may not be available in the
   configure script, try `--localstatedir=/var` instead.
 
+
 ### Building from GIT
 
-The `configure` script and the `Makefile.in` files are generated and not
-stored in GIT.  So if you checkout the sources from GitHub you first
-need to generated these files using `./autogen.sh`.
+The `configure` script and the `Makefile.in` files are generated for
+release tarballs and not stored in GIT.  When you work with the GIT
+source tree you need the GNU `automake` and `autoconf` tools:
+
+    $ sudo apt install automake autoconf
+
+Now, from the top directory of the cloned GIT tree, call:
+
+    $ ./autogen.sh
+
 
 ### Static Build
 
