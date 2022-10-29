@@ -61,7 +61,8 @@ Note, depending on your system this directory may be wiped on reboot, so
 .Nm
 may start up with a different UUID every time.
 .Sh OPTIONS
-.Bl -tag -width "-l LEVEL " -compact
+The following command line options are available:
+.Bl -tag -width "-l LEVEL "
 .It Fl h
 Show program help text
 .It Fl i Ar SEC
@@ -97,7 +98,7 @@ TTL for multicast frames, default 2, according to the UPnP Device
 Architecture (UDA)
 .It Fl v
 Show program version
-.It Ar IFACE
+.It Op Ar IFACE
 By default
 .Nm
 runs on all IPv4 capable interfaces, except loopback.  If interface
