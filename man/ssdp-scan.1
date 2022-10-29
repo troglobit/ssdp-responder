@@ -20,6 +20,9 @@
 .Nd Scan for SSDP capable devices on attached networks
 .Sh SYNOPSIS
 .Nm
+.Op Fl h
+.Op Fl l Ar LEVEL
+.Op Fl t Ar SEC
 .Sh DESCRIPTION
 .Nm
 is a tool for scanning for Simple Service Discovery Protocol (SSDP)
@@ -29,8 +32,41 @@ to
 .Cm 239.255.255.250
 to continuously update a list of SSDP hosts.
 .Sh OPTIONS
+The following command line options are available:
+.Bl -tag -width "-l LEVEL "
+.It Fl h
+Show program help text.
+.It Fl l Ar LEVEL
+Set log level to one of the following, default
+.Nm notice :
+.Pp
+.Bl -tag -width WARNING -compact
+.It Cm none
+Disable all logging
+.It Cm error
+Error conditions
+.It Cm warning
+Warning conditions
+.It Cm notice
+Normal but significant condition (default)
+.It Cm info
+Informational
+.It Cm debug
+Debug-level messages
+.El
+.Pp
+..It Fl t Ar SEC
+Timeout and exit after
+.Ar SEC
+seconds.
+.It Op Ar IFACE
+By default
 .Nm
-has no command line options.
+runs on all IPv4 capable interfaces, except loopback.  If interface
+names are given as arguments,
+.Nm
+will run only on them.
+.El
 .Sh NOTES
 .Nm
 is very impatient.  In order to scan for hosts it sends
@@ -40,9 +76,12 @@ in turn causes
 .Nm
 to retrieve XML files from each replying host.  Be careful.
 .Pp
+Unless started with the
+.Fl t Ar SEC
+option,
 .Nm
-does not terminate on its own.  It scans continuously until the user
-stops it by pressing Ctrl-C.
+does not terminate on its own.  Instead, it scans continuously until the
+user stops it by pressing Ctrl-C.
 .Pp
 .Nm
 does not rely on a local SSDP responder.  It has no dependencies besides

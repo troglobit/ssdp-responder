@@ -272,23 +272,62 @@ static void bye(int signo)
 	running = 0;
 }
 
+static int usage(int code)
+{
+	printf("Usage: ssdp-scan [-h] [-l LEVEL] [-t SEC] [IFACE [IFACE ...]]\n"
+	       "\n"
+	       "    -h        This help text\n"
+		   "    -l LEVEL  Set log level: none, err, notice (default), info, debug\n"
+	       "    -t SEC    Timeout and exit after SEC seconds.\n"
+	       "\n"
+	       "Bug report address : %s\n", PACKAGE_BUGREPORT);
+#ifdef PACKAGE_URL
+        printf("Project homepage   : %s\n", PACKAGE_URL);
+#endif
+
+	return code;
+}
+
 int main(int argc, char *argv[])
 {
 	struct pollfd pfd[MAX_NUM_IFACES];
 	int throttle = 1;
+	int timeout = 0;
+	int c;
+
+	log_level = LOG_NOTICE;
+	while ((c = getopt(argc, argv, "hl:t:")) != EOF) {
+		switch (c) {
+		case 'h':
+			return usage(0);
+
+		case 'l':
+			log_level = log_str2lvl(optarg);
+			if (-1 == log_level)
+				return usage(1);
+			break;
+
+		case 't':
+			timeout = atoi(optarg);
+			break;
+
+		default:
+			return usage(1);
+		}
+	}
 
 	atty = isatty(STDOUT_FILENO);
 	signal(SIGINT, bye);
 	signal(SIGALRM, bye);
 
-	log_level = LOG_WARNING;
 	log_init(0);
 
-#ifdef TEST_MODE
-	alarm(2);
-#endif
+	if (timeout > 0) {
+		warnx("Auto-stop in %d seconds ...", timeout);
+		alarm(timeout);
+	}
 
-	if (ssdp_init(1, 0, &argv[1], argc - 1, ssdp_read) < 1)
+	if (ssdp_init(1, 0, &argv[optind], argc - optind, ssdp_read) < 1)
 		return 1;
 
 	hidecursor();
