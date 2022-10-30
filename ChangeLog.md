@@ -4,10 +4,12 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v1.9][] - 2022-10-22
+[v1.9][] - 2022-10-30
 ---------------------
 
 ### Changes
+ - Add command line options to `sscp-scan`, mostly for testing but may
+   be useful for other purposes too
  - Use `$ac_default_prefix` instead of `/usr/local` in configure script
    when expanding paths
  - Update copyright years (affects LICENSE file hash)
