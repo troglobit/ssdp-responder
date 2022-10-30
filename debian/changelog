@@ -1,0 +1,35 @@
+ssdp-responder (1.8) stable; urgency=medium
+
+  * Fix avahi-daemon (mDNS) conflict, no conflict with SSDP, caused
+    by copy-paste between mdnsd and project and this
+  * Fix default install prefix, should be GNU /usr/local not /.  The
+    default for Debian systems is /usr
+  * Use UUID cache directory from configure script, with fall-back to
+    operating system specific /var/lib/misc or /var/db
+  * Update man page with info on UUID cache location
+  * Workaround for `--runstatedir` on systems with older autoconf
+  * Add missing systemd unit file
+  * Add missing SysV init script
+
+ -- Joachim Wiberg <troglobit@gmail.com>  Sat, 23 Jan 2021 17:39:33 +0100
+
+ssdp-responder (1.7) unstable; urgency=medium
+
+  * Use /etc/os-release as base for SSDP server string, distribution
+    release information is primarily stored in this file, some Linux
+    systems still use /etc/lsb-release, on real UNIX systems we can
+    use uname(1).
+  * Update ssdpd(8) man page
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 07 Jun 2020 16:40:44 +0200
+
+ssdp-responder (1.6) stable; urgency=low
+
+  * Fix #1: CVE-2019-14323
+  * Refactor socket handling, enable SO_REUSEADDR + SO_REUSEPORT
+  * Change default behavior, must now use -n to run in foreground
+  * Add ssdp-scan tool, similar to mdns-scan
+  * Add systemd unit file
+  * Initial Debian/Ubuntu packaging
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 07 Jun 2020 13:34:02 +0200

@@ -1,0 +1,3 @@
+version=3
+opts=filenamemangle=s/.+\/v?(\d\S*)\.tar\.gz/ssdp-responder-$1\.tar\.gz/ \
+  https://github.com/troglobit/ssdp-responder/releases .*/ssdp-responder-?(\d\S*)\.tar\.gz

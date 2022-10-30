@@ -1,0 +1,3 @@
+lib/systemd/system/ssdpd.service
+usr/sbin/ssdpd
+usr/share/man/man8/ssdpd.8
