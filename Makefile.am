@@ -36,7 +36,7 @@ release-hook:
 		echo;									\
 	fi
 
-release: release-hook distcheck package
+release: release-hook distcheck
 	@for file in $(DIST_ARCHIVES); do	\
 		md5sum $$file > ../$$file.md5;	\
 	done
