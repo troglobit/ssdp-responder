@@ -232,20 +232,21 @@ static void ssdp_recv(int sd)
 
 static void wait_message(time_t tmo)
 {
-	while (1) {
-		int timeout;
+	int timeout = tmo - time(NULL);
 
-		timeout = tmo - time(NULL);
+	do {
 		if (timeout < 0)
 			break;
 
 		if (ssdp_poll(timeout * 1000) == -1) {
-			if (errno == EINTR)
-				break;
-
-			err(1, "Unrecoverable error");
+			if (errno != EINTR)
+				err(1, "Unrecoverable error");
+			break;
 		}
-	}
+
+		timeout = tmo - time(NULL);
+
+	} while (timeout);
 }
 
 static void announce(struct ifsock *ifs, int mod)
