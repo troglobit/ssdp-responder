@@ -22,7 +22,7 @@ case $host_os in
 	;;
     linux*)
 	vardb=lib/misc
-	CPPFLAGS="-D_GNU_SOURCE"
+	CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
 	;;
     *)
 	vardb=tmp
