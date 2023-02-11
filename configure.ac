@@ -1,4 +1,4 @@
-AC_INIT([ssdpd], [1.9], [https://github.com/troglobit/ssdp-responder/issues],
+AC_INIT([ssdpd], [1.10-dev], [https://github.com/troglobit/ssdp-responder/issues],
 	[ssdp-responder], [https://github.com/troglobit/ssdp-responder])
 AC_CONFIG_AUX_DIR(aux)
 AM_INIT_AUTOMAKE([1.11 foreign])
