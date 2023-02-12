@@ -23,6 +23,7 @@ char  hostname[64];
 char *ver = NULL;
 char *os  = NULL;
 char  uuid[42];
+char  url[256];
 
 static char *supported_types[] = {
 	SSDP_ST_ALL,
@@ -463,13 +464,15 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsvw] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
+	printf("Usage: %s [-hnsvw] [-i SEC] [-l LEVEL] [-p URL] [-r SEC] [-t TTL]\n"
+	       "                      [-u UUID] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
 	       "    -l LVL    Set log level: none, err, notice (default), info, debug\n"
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
+	       "    -p URL    Override presentationURL in description.xml\n"
 	       "    -s        Use syslog, default unless running in foreground, -n\n"
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
 	       "    -u UUID   Custom UUID instead of auto-generating one\n"
@@ -496,7 +499,7 @@ int main(int argc, char *argv[])
 	int do_web = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "hi:l:nr:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "hi:l:np:r:st:u:vw")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -516,6 +519,10 @@ int main(int argc, char *argv[])
 		case 'n':
 			background = 0;
 			do_syslog--;
+			break;
+
+		case 'p':
+			strlcpy(url, optarg, sizeof(url));
 			break;
 
 		case 'r':

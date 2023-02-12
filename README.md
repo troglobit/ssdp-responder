@@ -20,13 +20,15 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-hnsvw] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
+Usage: ssdpd [-hnsvw] [-i SEC] [-l LEVEL] [-p URL] [-r SEC] [-t TTL]
+                      [-u UUID] [IFACE [IFACE ...]]
 
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
     -l LVL    Set log level: none, err, notice (default), info, debug
     -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
+    -p URL    Override presentationURL in description.xml
     -s        Use syslog, default unless running in foreground, -n
     -t TTL    TTL for multicast frames, default 2, according to the UDA
     -u UUID   Custom UUID instead of auto-generating one

@@ -23,6 +23,7 @@
 .Op Fl hnsvw
 .Op Fl i Ar SEC
 .Op Fl l Ar LEVEL
+.Op Fl p Ar URL
 .Op Fl r Ar SEC
 .Op Fl t Ar TTL
 .Io Fl u Ar UUID
@@ -90,6 +91,19 @@ Debug-level messages
 .Pp
 .It Fl n
 Run in foreground, do not daemonize by default
+.It Fl p Ar URL
+Override
+.Cm presentationURL
+in
+.Pa description.xml .
+This can be an absolute or relative URL.  The default in the built-in
+micro HTTP server is to use the IP address of the interface the client
+connets to,
+.Lk http://IP/
+.Pp
+The
+.Cm presentationURL
+is usually the URL to access the device's web interface.
 .It Fl r Ar SEC
 Interface refresh interval (5-1800), default 600 sec
 .It Fl s
@@ -111,10 +125,11 @@ Show program version
 .It Fl w
 Disable built-in micro HTTP server on port 1901.  Use this when
 you want to use another (more capable) web server to provide the
-.Cm description.xml
+.Pa description.xml
 file that clients request to read the IP address and, optionally,
 custom icon for your device.  See below for an example of how the
-description.xml file can look.
+.Pa description.xml
+file can look.
 .It Op Ar IFACE
 By default
 .Nm
@@ -129,7 +144,7 @@ will add them later.
 .Sh WEB SERVER
 The built-in micro HTTP server runs on port 1901 (base SSDP port + 1).
 Its only purpose is to serve the file
-.Cm description.xml
+.Pa description.xml
 that clients request after receiving the SSDP announcement frames.  The
 default XML file looks like this:
 .Pp
@@ -183,5 +198,7 @@ Cached UUID (*BSD), may be wiped by the system on reboot
 .Xr ssdp-scan 1
 .Xr avahi-daemon 8
 .Xr lldpd 8
+.Pp
+.Lk http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.0.pdf UPnP Device Architecture (UDA)
 .Sh AUTHORS
 .An Joachim Wiberg Aq troglobit@gmail.com

@@ -47,12 +47,10 @@ const char *xml =
 	"  <manufacturer>%s</manufacturer>\r\n%s"
 	"  <modelName>%s</modelName>\r\n"
 	"  <UDN>%s</UDN>\r\n"
-	"  <presentationURL>http://%s</presentationURL>\r\n"
+	"  <presentationURL>%s</presentationURL>\r\n"
 	" </device>\r\n"
 	"</root>\r\n"
 	"\r\n";
-
-extern char uuid[];
 
 /* Peek into SOCK_STREAM on accepted client socket to figure out inbound interface */
 static struct sockaddr_in *stream_peek(int sd, char *ifname, size_t iflen)
@@ -99,7 +97,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 		"Content-Type: text/xml\r\n"
 		"Connection: close\r\n"
 		"\r\n";
-	char hostname[64], url[128] = "";
+	char hostname[64], mfgurl[128] = "";
 	char mesg[1024], *reqline[3];
 	int rc, rcvd;
 
@@ -140,8 +138,11 @@ static int respond(int sd, struct sockaddr_in *sin)
 
 		gethostname(hostname, sizeof(hostname));
 #ifdef MANUFACTURER_URL
-		snprintf(url, sizeof(url), "  <manufacturerURL>%s</manufacturerURL>\r\n", MANUFACTURER_URL);
+		snprintf(mfgurl, sizeof(mfgurl), "  <manufacturerURL>%s</manufacturerURL>\r\n", MANUFACTURER_URL);
 #endif
+		if (!url[0])
+			snprintf(url, sizeof(url), "http://%s", inet_ntoa(sin->sin_addr));
+
 		logit(LOG_DEBUG, "Sending XML reply ...");
 		if (send(sd, head, strlen(head), 0) < 0)
 			goto fail;
@@ -149,10 +150,10 @@ static int respond(int sd, struct sockaddr_in *sin)
 		snprintf(mesg, sizeof(mesg), xml,
 			 hostname,
 			 MANUFACTURER,
-			 url,
+			 mfgurl,
 			 MODEL,
 			 uuid,
-			 inet_ntoa(sin->sin_addr));
+			 url);
 		if (send(sd, mesg, strlen(mesg), 0) < 0) {
 		fail:
 			logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));
