@@ -20,9 +20,11 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-hnsvw] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
+Usage: ssdpd [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
                       [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
 
+    -d URL    Override UPnP description.xml URL in announcements.  The '%s' in
+              the URL is replaced with the IP, e.g. https://%s:1901/main.xml
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
     -l LVL    Set log level: none, err, notice (default), info, debug
@@ -40,6 +42,12 @@ Usage: ssdpd [-hnsvw] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
 Bug report address : https://github.com/troglobit/ssdp-responder/issues
 Project homepage   : https://github.com/troglobit/ssdp-responder
 ```
+
+The `-d URL` argument can contain one `%s` modifier which is replaced
+with the IP address of the interface the SSDP notification or reply is
+sent on.  For example:
+
+    ssdpd -d https://%s:1901/description.xml
 
 See `configure --help` for some build time options.
 

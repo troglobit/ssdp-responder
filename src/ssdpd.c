@@ -19,6 +19,7 @@
 #include "ssdp.h"
 
 char  server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
+char  location[128];
 char  hostname[64];
 char *ver = NULL;
 char *os  = NULL;
@@ -52,6 +53,15 @@ static void compose_addr(struct sockaddr_in *sin, char *group, int port)
 	sin->sin_addr.s_addr = inet_addr(group);
 }
 
+static char *compose_location(char *host)
+{
+	const char *fmt = location;
+	static char buf[256];
+
+	snprintf(buf, sizeof(buf), fmt, host);
+	return buf;
+}
+
 static void compose_response(char *type, char *host, char *buf, size_t len)
 {
 	char usn[256];
@@ -75,7 +85,7 @@ static void compose_response(char *type, char *host, char *buf, size_t len)
 	snprintf(buf, len, "HTTP/1.1 200 OK\r\n"
 		 "Server: %s\r\n"
 		 "Date: %s\r\n"
-		 "Location: http://%s:%d%s\r\n"
+		 "Location: %s\r\n"
 		 "ST: %s\r\n"
 		 "EXT: \r\n"
 		 "USN: %s\r\n"
@@ -83,7 +93,7 @@ static void compose_response(char *type, char *host, char *buf, size_t len)
 		 "\r\n",
 		 server_string,
 		 date,
-		 host, LOCATION_PORT, LOCATION_DESC,
+		 compose_location(host),
 		 type,
 		 usn,
 		 CACHE_TIMEOUT);
@@ -108,7 +118,7 @@ static void compose_notify(char *type, char *host, char *buf, size_t len)
 	snprintf(buf, len, "NOTIFY * HTTP/1.1\r\n"
 		 "Host: %s:%d\r\n"
 		 "Server: %s\r\n"
-		 "Location: http://%s:%d%s\r\n"
+		 "Location: %s\r\n"
 		 "NT: %s\r\n"
 		 "NTS: ssdp:alive\r\n"
 		 "USN: %s\r\n"
@@ -116,7 +126,7 @@ static void compose_notify(char *type, char *host, char *buf, size_t len)
 		 "\r\n",
 		 MC_SSDP_GROUP, MC_SSDP_PORT,
 		 server_string,
-		 host, LOCATION_PORT, LOCATION_DESC,
+		 compose_location(host),
 		 type,
 		 usn,
 		 CACHE_TIMEOUT);
@@ -470,9 +480,11 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsvw] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]\n"
+	printf("Usage: %s [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]\n"
 	       "                      [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
 	       "\n"
+	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
+	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
 	       "    -l LVL    Set log level: none, err, notice (default), info, debug\n"
@@ -503,12 +515,17 @@ int main(int argc, char *argv[])
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
 	int ttl = MC_TTL_DEFAULT;
+	char *description = NULL;
 	int do_syslog = 1;
 	int do_web = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "hi:l:m:M:np:r:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "d:hi:l:m:M:np:r:st:u:vw")) != EOF) {
 		switch (c) {
+		case 'd':
+			description = optarg;
+			break;
+
 		case 'h':
 			return usage(0);
 
@@ -586,6 +603,11 @@ int main(int argc, char *argv[])
 	lsb_init();
 	if (do_web)
 		web_init();
+	if (description)
+		strlcpy(location, description, sizeof(location));
+	else
+		snprintf(location, sizeof(location), "http://%s:%d%s",
+			 "%s", LOCATION_PORT, LOCATION_DESC);
 	pidfile(PACKAGE_NAME);
 
 	while (running) {

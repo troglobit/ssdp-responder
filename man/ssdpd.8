@@ -21,6 +21,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl hnsvw
+.Op Fl d Ar URL
 .Op Fl i Ar SEC
 .Op Fl l Ar LEVEL
 .Op Fl m Ar NAME
@@ -68,6 +69,14 @@ may start up with a different UUID every time.
 .Sh OPTIONS
 The following command line options are available:
 .Bl -tag -width "-l LEVEL "
+.It Fl d Ar URL
+Override the UPnP description URL in SSDP announcement messages and
+replies, default:
+.Lk http://%s:1901/description.xml .
+.Pp
+A single '%s' modifier is allowed, which is be replaced by the
+interface's IP address.  Example:
+.Lk https://%s:5000/rootDesc.xml
 .It Fl h
 Show program help text
 .It Fl i Ar SEC
