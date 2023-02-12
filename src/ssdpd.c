@@ -409,6 +409,9 @@ static void uuidgen(void)
 	char buf[42];
 	FILE *fp;
 
+	if (uuid[0])
+		goto custom;
+
 	fp = fopen_cache("r", file, sizeof(file));
 	if (!fp) {
 	generate:
@@ -439,6 +442,7 @@ static void uuidgen(void)
 	}
 
 	strcpy(uuid, buf);
+custom:
 	logit(LOG_DEBUG, "URN: %s", uuid);
 }
 
@@ -459,7 +463,7 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [IFACE [IFACE ...]]\n"
+	printf("Usage: %s [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
@@ -468,6 +472,7 @@ static int usage(int code)
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -s        Use syslog, default unless running in foreground, -n\n"
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
+	       "    -u UUID   Custom UUID instead of auto-generating one\n"
 	       "    -v        Show program version\n"
 	       "\n"
 	       "Bug report address : %s\n", PACKAGE_NAME, NOTIFY_INTERVAL, REFRESH_INTERVAL, PACKAGE_BUGREPORT);
@@ -488,7 +493,7 @@ int main(int argc, char *argv[])
 	int do_syslog = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "hi:l:nr:st:v")) != EOF) {
+	while ((c = getopt(argc, argv, "hi:l:nr:st:u:v")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -524,6 +529,10 @@ int main(int argc, char *argv[])
 			ttl = atoi(optarg);
 			if (ttl < 1 || ttl > 255)
 				errx(1, "Invalid TTL (1-255).");
+			break;
+
+		case 'u':
+			snprintf(uuid, sizeof(uuid), "uuid:%s", optarg);
 			break;
 
 		case 'v':

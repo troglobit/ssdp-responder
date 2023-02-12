@@ -25,6 +25,7 @@
 .Op Fl l Ar LEVEL
 .Op Fl r Ar SEC
 .Op Fl t Ar TTL
+.Io Fl u Ar UUID
 .Op Ar IFACE Op Ar IFACE Op Ar ...
 .Sh DESCRIPTION
 Simple Service Discovery Protocol daemon (SSDP) for networked Linux
@@ -96,6 +97,14 @@ Use syslog, default unless running in foreground,
 .It Fl t Ar TTL
 TTL for multicast frames, default 2, according to the UPnP Device
 Architecture (UDA)
+.It Fl u Ar UUID
+Custom UUID to use.  By default,
+.Nm
+generates a UUID when starting up the first time.  That UUID is
+cached between restarts in the file
+.Pa /var/lib/misc/ssdpd.cache .
+When this option is given, the built-in UUID generator is disabled and
+the cache file is not used.
 .It Fl v
 Show program version
 .It Op Ar IFACE

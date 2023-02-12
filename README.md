@@ -20,7 +20,7 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [IFACE [IFACE ...]]
+Usage: ssdpd [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
 
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
@@ -29,6 +29,7 @@ Usage: ssdpd [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [IFACE [IFACE ...]]
     -r SEC    Interface refresh interval (5-1800), default 600 sec
     -s        Use syslog, default unless running in foreground, -n
     -t TTL    TTL for multicast frames, default 2, according to the UDA
+    -u UUID   Custom UUID instead of auto-generating one
     -v        Show program version
 
 Bug report address : https://github.com/troglobit/ssdp-responder/issues
