@@ -25,6 +25,13 @@
 #endif
 #include <sys/time.h>		/* lutimes(), utimes(), utimensat() */
 
+#ifndef TIMESPEC_TO_TIMEVAL
+# define TIMESPEC_TO_TIMEVAL(tv, ts) {		\
+        (tv)->tv_sec  = (ts)->tv_sec;		\
+        (tv)->tv_usec = (ts)->tv_nsec / 1000;	\
+}
+#endif
+
 int utimensat(int dirfd, const char *pathname, const struct timespec ts[2], int flags)
 {
 	int ret = -1;
