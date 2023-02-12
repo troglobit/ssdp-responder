@@ -97,8 +97,9 @@ static int respond(int sd, struct sockaddr_in *sin)
 		"Content-Type: text/xml\r\n"
 		"Connection: close\r\n"
 		"\r\n";
-	char hostname[64], mfgurl[128] = "";
+	char manufacturer_url[192] = "";
 	char mesg[1024], *reqline[3];
+	char hostname[64];
 	int rc, rcvd;
 
 	/* Check for early disconnect or client timeout */
@@ -137,9 +138,9 @@ static int respond(int sd, struct sockaddr_in *sin)
 		}
 
 		gethostname(hostname, sizeof(hostname));
-#ifdef MANUFACTURER_URL
-		snprintf(mfgurl, sizeof(mfgurl), "  <manufacturerURL>%s</manufacturerURL>\r\n", MANUFACTURER_URL);
-#endif
+		if (mfrurl[0])
+			snprintf(manufacturer_url, sizeof(manufacturer_url),
+				 "  <manufacturerURL>%s</manufacturerURL>\r\n", mfrurl);
 		if (!url[0])
 			snprintf(url, sizeof(url), "http://%s", inet_ntoa(sin->sin_addr));
 
@@ -149,8 +150,8 @@ static int respond(int sd, struct sockaddr_in *sin)
 
 		snprintf(mesg, sizeof(mesg), xml,
 			 hostname,
-			 MANUFACTURER,
-			 mfgurl,
+			 mfrnm,
+			 manufacturer_url,
 			 MODEL,
 			 uuid,
 			 url);

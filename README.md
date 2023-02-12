@@ -20,12 +20,14 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-hnsvw] [-i SEC] [-l LEVEL] [-p URL] [-r SEC] [-t TTL]
-                      [-u UUID] [IFACE [IFACE ...]]
+Usage: ssdpd [-hnsvw] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
+                      [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
 
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
     -l LVL    Set log level: none, err, notice (default), info, debug
+    -m NAME   Override manufacturer in description.xml
+    -M URL    Override manufacturerURL in description.xml
     -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
     -p URL    Override presentationURL in description.xml

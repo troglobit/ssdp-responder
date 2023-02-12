@@ -23,6 +23,8 @@
 .Op Fl hnsvw
 .Op Fl i Ar SEC
 .Op Fl l Ar LEVEL
+.Op Fl m Ar NAME
+.Op Fl M Ar URL
 .Op Fl p Ar URL
 .Op Fl r Ar SEC
 .Op Fl t Ar TTL
@@ -91,6 +93,16 @@ Debug-level messages
 .Pp
 .It Fl n
 Run in foreground, do not daemonize by default
+.It Fl m Ar NAME
+Override
+.Cm manufacturer
+in
+.Pa description.xml .
+.It Fl M Ar UIRL
+Override
+.Cm manufacturerURL
+in
+.Pa description.xml .
 .It Fl p Ar URL
 Override
 .Cm presentationURL

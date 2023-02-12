@@ -22,6 +22,12 @@ char  server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 char  hostname[64];
 char *ver = NULL;
 char *os  = NULL;
+#ifdef MANUFACTURER_URL
+char  mfrurl[128] = MANUFACTURER_URL;
+#else
+char  mfrurl[128];
+#endif
+char  mfrnm[128] = MANUFACTURER;
 char  uuid[42];
 char  url[256];
 
@@ -464,12 +470,14 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsvw] [-i SEC] [-l LEVEL] [-p URL] [-r SEC] [-t TTL]\n"
-	       "                      [-u UUID] [IFACE [IFACE ...]]\n"
+	printf("Usage: %s [-hnsvw] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]\n"
+	       "                      [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
 	       "    -l LVL    Set log level: none, err, notice (default), info, debug\n"
+	       "    -m NAME   Override manufacturer in description.xml\n"
+	       "    -M URL    Override manufacturerURL in description.xml\n"
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -p URL    Override presentationURL in description.xml\n"
@@ -499,7 +507,7 @@ int main(int argc, char *argv[])
 	int do_web = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "hi:l:np:r:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "hi:l:m:M:np:r:st:u:vw")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -514,6 +522,14 @@ int main(int argc, char *argv[])
 			log_level = log_str2lvl(optarg);
 			if (-1 == log_level)
 				return usage(1);
+			break;
+
+		case 'm':
+			strlcpy(mfrnm, optarg, sizeof(mfrnm));
+			break;
+
+		case 'M':
+			strlcpy(mfrurl, optarg, sizeof(mfrurl));
 			break;
 
 		case 'n':
