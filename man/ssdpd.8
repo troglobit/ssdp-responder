@@ -126,6 +126,40 @@ an interface given on the command line does not exist at first,
 .Nm
 will add them later.
 .El
+.Sh WEB SERVER
+The built-in micro HTTP server runs on port 1901 (base SSDP port + 1).
+Its only purpose is to serve the file
+.Cm description.xml
+that clients request after receiving the SSDP announcement frames.  The
+default XML file looks like this:
+.Pp
+.Bd -unfilled -offset indent
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+ <specVersion>
+   <major>1</major>
+   <minor>0</minor>
+ </specVersion>
+ <device>
+  <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>
+  <friendlyName>HOSTNAME</friendlyName>
+  <manufacturer>Troglobit Software Systems</manufacturer>
+  <manufacturerURL>https://troglobit.com</manufacturerURL>
+  <modelName>Generic</modelName>
+  <UDN>uuid:12345678-coff-eede-adbe-ff00-123456654321</UDN>
+  <presentationURL>http://1.2.3.4/description.xml</presentationURL>
+ </device>
+</root>
+.Ed
+.Pp
+When
+.Nm
+is started with the
+.Fl w
+option it is imperative that the
+.Fl u Ar UUID
+is also provided.  Otherwise clients wil detect a mismatch in the
+advertised UUID and the XML file.
 .Sh FILES
 .Bl -tag -width /var/lib/misc/ssdpd.cache -compact
 .It Pa /run/ssdpd.pid
