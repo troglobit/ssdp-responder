@@ -46,18 +46,18 @@ AC_ARG_ENABLE(test-mode,
         AS_HELP_STRING([--enable-test-mode], [Enable loopback test mode]),, [enable_test_mode=no])
 
 AC_ARG_WITH([vendor],
-	AS_HELP_STRING([--with-vendor=VENDOR], [Set a custom vendor string]),
+	AS_HELP_STRING([--with-vendor=VENDOR], [Override vendor string, default: Troglobit Software Systems]),
 	[vendor=$withval], [vendor="Troglobit Software Systems"])
 
 AC_ARG_WITH([vendor-url],
-	AS_HELP_STRING([--with-vendor-url=VENDOR], [Set vendor URL]))
+	AS_HELP_STRING([--with-vendor-url=VENDOR], [Set vendor URL, default disabled]))
 
 AC_ARG_WITH([model],
-	AS_HELP_STRING([--with-model=MODEL], [Set a custom model string]),
+	AS_HELP_STRING([--with-model=MODEL], [Override model string, default: Generic]),
 	[model=$withval], [model="Generic"])
 
 AC_ARG_WITH([systemd],
-     [AS_HELP_STRING([--with-systemd=DIR], [Directory for systemd service files])],,
+     [AS_HELP_STRING([--with-systemd=DIR], [Override detected directory for systemd unit files])],,
      [with_systemd=auto])
 
 AS_IF([test "x$enable_test_mode" == "xyes"], [
