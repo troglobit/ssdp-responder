@@ -20,7 +20,7 @@
 .Nd Simple Service Discovery Protocol daemon
 .Sh SYNOPSIS
 .Nm
-.Op Fl hnsv
+.Op Fl hnsvw
 .Op Fl i Ar SEC
 .Op Fl l Ar LEVEL
 .Op Fl r Ar SEC
@@ -108,6 +108,13 @@ When this option is given, the built-in UUID generator is disabled and
 the cache file is not used.
 .It Fl v
 Show program version
+.It Fl w
+Disable built-in micro HTTP server on port 1901.  Use this when
+you want to use another (more capable) web server to provide the
+.Cm description.xml
+file that clients request to read the IP address and, optionally,
+custom icon for your device.  See below for an example of how the
+description.xml file can look.
 .It Op Ar IFACE
 By default
 .Nm

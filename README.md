@@ -20,7 +20,7 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
+Usage: ssdpd [-hnsvw] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
 
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
@@ -31,6 +31,7 @@ Usage: ssdpd [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFA
     -t TTL    TTL for multicast frames, default 2, according to the UDA
     -u UUID   Custom UUID instead of auto-generating one
     -v        Show program version
+    -w        Disable built-in micro HTTP server on port 1901
 
 Bug report address : https://github.com/troglobit/ssdp-responder/issues
 Project homepage   : https://github.com/troglobit/ssdp-responder

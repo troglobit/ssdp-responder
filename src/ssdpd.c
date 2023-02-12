@@ -463,7 +463,7 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsv] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
+	printf("Usage: %s [-hnsvw] [-i SEC] [-l LEVEL] [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
@@ -474,8 +474,10 @@ static int usage(int code)
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
 	       "    -u UUID   Custom UUID instead of auto-generating one\n"
 	       "    -v        Show program version\n"
+	       "    -w        Disable built-in micro HTTP server on port %d\n"
 	       "\n"
-	       "Bug report address : %s\n", PACKAGE_NAME, NOTIFY_INTERVAL, REFRESH_INTERVAL, PACKAGE_BUGREPORT);
+	       "Bug report address : %s\n", PACKAGE_NAME, NOTIFY_INTERVAL, REFRESH_INTERVAL,
+	       LOCATION_PORT, PACKAGE_BUGREPORT);
 #ifdef PACKAGE_URL
         printf("Project homepage   : %s\n", PACKAGE_URL);
 #endif
@@ -491,9 +493,10 @@ int main(int argc, char *argv[])
 	int refresh = REFRESH_INTERVAL;
 	int ttl = MC_TTL_DEFAULT;
 	int do_syslog = 1;
+	int do_web = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "hi:l:nr:st:u:v")) != EOF) {
+	while ((c = getopt(argc, argv, "hi:l:nr:st:u:vw")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
@@ -539,6 +542,10 @@ int main(int argc, char *argv[])
 			puts(PACKAGE_VERSION);
 			return 0;
 
+		case 'w':
+			do_web = 0;
+			break;
+
 		default:
 			break;
 		}
@@ -554,7 +561,8 @@ int main(int argc, char *argv[])
 	log_init(do_syslog);
 	uuidgen();
 	lsb_init();
-	web_init();
+	if (do_web)
+		web_init();
 	pidfile(PACKAGE_NAME);
 
 	while (running) {
