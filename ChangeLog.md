@@ -4,6 +4,35 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v1.10][UNRELEASED]
+---------------------
+
+### Changes
+ - Add support for `-d URL` to override the UPnP description URL, a
+   single `%s` is supported to be replaced with the interface address
+ - Add support for `-m NAME` to override the `manufacturer` in the
+   default `description.xml`
+ - Add support for `-M URL` to override the `manufacturerURL` in the
+   default `description.xml`
+ - Add support for `-p URL` to override the `presentationURL` in the
+   default `description.xml`, a single `%s` is supported
+ - Add support for `-u UUID` to use a custom UUID, useful when the
+   built-in micro HTTP server is disabled
+ - Add support for `-w` to disable built-in micro HTTP server, useful
+   when other, more capable, web servers are available.  Make sure to
+   have the alternate web server running on port 1901 to serve the file
+   `/description.xml`, see also `-d URL` above, which details the
+   location of the UPnP description URL
+
+### Fixes
+ - Fix #11: periodic busy loop causing intermittent 100% CPU load
+ - Fix invalid `<UDN>uuid:uuid:...</UDN>` in `description.xml`
+ - Add `Date:` and `Server:` to HTTP header in micro HTTP server
+ - Add support for HTTP HEAD requests to micro HTTP server
+ - Don't overwrite CPPFLAGS from the command line
+ - Portability fix to `utimensat()` replacement function
+
+
 [v1.9][] - 2022-10-30
 ---------------------
 
@@ -146,6 +175,7 @@ v1.0 - 2017-05-11
 Initial release
 
 
+[UNRELEASED]: https://github.com/troglobit/ssdp-responder/compare/v1.9...HEAD
 [v1.9]: https://github.com/troglobit/ssdp-responder/compare/v1.8...v1.9
 [v1.8]: https://github.com/troglobit/ssdp-responder/compare/v1.7...v1.8
 [v1.7]: https://github.com/troglobit/ssdp-responder/compare/v1.6...v1.7
