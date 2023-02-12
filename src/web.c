@@ -15,7 +15,10 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>

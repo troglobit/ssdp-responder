@@ -31,7 +31,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <config.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <sys/stat.h>		/* utimensat() */
 #include <sys/time.h>		/* utimensat() on *BSD */
 #include <sys/types.h>
