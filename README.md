@@ -28,11 +28,12 @@ Usage: ssdpd [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
     -h        This help text
     -i SEC    SSDP notify interval (30-900), default 300 sec
     -l LVL    Set log level: none, err, notice (default), info, debug
-    -m NAME   Override manufacturer in description.xml
-    -M URL    Override manufacturerURL in description.xml
+    -m NAME   Override manufacturer in the default description.xml
+    -M URL    Override manufacturerURL in the default description.xml
     -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
-    -p URL    Override presentationURL in description.xml
+    -p URL    Override presentationURL in description.xml.  The '%s' in the
+              URL is replaced with the IP address.  Default: http://%s/
     -s        Use syslog, default unless running in foreground, -n
     -t TTL    TTL for multicast frames, default 2, according to the UDA
     -u UUID   Custom UUID instead of auto-generating one

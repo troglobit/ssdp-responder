@@ -30,7 +30,7 @@ char  mfrurl[128];
 #endif
 char  mfrnm[128] = MANUFACTURER;
 char  uuid[42];
-char  url[256];
+char  url[128] = "http://%s/";
 
 static char *supported_types[] = {
 	SSDP_ST_ALL,
@@ -492,7 +492,8 @@ static int usage(int code)
 	       "    -M URL    Override manufacturerURL in description.xml\n"
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
-	       "    -p URL    Override presentationURL in description.xml\n"
+	       "    -p URL    Override presentationURL in description.xml.  The '%%s' in the\n"
+	       "              URL is replaced with the IP address.  Default: http://%%s/\n"
 	       "    -s        Use syslog, default unless running in foreground, -n\n"
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
 	       "    -u UUID   Custom UUID instead of auto-generating one\n"

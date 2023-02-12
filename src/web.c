@@ -87,6 +87,15 @@ static struct sockaddr_in *stream_peek(int sd, char *ifname, size_t iflen)
         return &sin;
 }
 
+static char *compose_url(char *addr)
+{
+	const char *fmt = url;
+	static char buf[192];
+
+	snprintf(buf, sizeof(buf), fmt, addr);
+	return buf;
+}
+
 static int respond(int sd, struct sockaddr_in *sin)
 {
 	struct pollfd pfd = {
@@ -141,8 +150,6 @@ static int respond(int sd, struct sockaddr_in *sin)
 		if (mfrurl[0])
 			snprintf(manufacturer_url, sizeof(manufacturer_url),
 				 "  <manufacturerURL>%s</manufacturerURL>\r\n", mfrurl);
-		if (!url[0])
-			snprintf(url, sizeof(url), "http://%s", inet_ntoa(sin->sin_addr));
 
 		logit(LOG_DEBUG, "Sending XML reply ...");
 		if (send(sd, head, strlen(head), 0) < 0)
@@ -154,7 +161,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 			 manufacturer_url,
 			 MODEL,
 			 uuid,
-			 url);
+			 compose_url(inet_ntoa(sin->sin_addr)));
 		if (send(sd, mesg, strlen(mesg), 0) < 0) {
 		fail:
 			logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));

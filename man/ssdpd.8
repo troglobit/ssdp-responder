@@ -74,8 +74,8 @@ Override the UPnP description URL in SSDP announcement messages and
 replies, default:
 .Lk http://%s:1901/description.xml .
 .Pp
-A single '%s' modifier is allowed, which is be replaced by the
-interface's IP address.  Example:
+A single '%s' modifier is allowed, which is replaced by the interface's
+IP address.  Example:
 .Lk https://%s:5000/rootDesc.xml
 .It Fl h
 Show program help text
@@ -117,14 +117,23 @@ Override
 .Cm presentationURL
 in
 .Pa description.xml .
-This can be an absolute or relative URL.  The default in the built-in
-micro HTTP server is to use the IP address of the interface the client
-connets to,
-.Lk http://IP/
+This is usually the URL to access the device's web interface.  Default:
+.Lk http://%s/
 .Pp
-The
-.Cm presentationURL
-is usually the URL to access the device's web interface.
+In the UPnP spec. this can be an absolute or relative URL, but the
+default
+.Pa description.xml
+does not have the
+.Cm <URLBase>
+option set.  See the
+.Fl d
+option for overriding the UPnP presentation URL entirely to support a
+relative
+.Cm presentationURL.
+.Pp
+A single '%s' modifier is allowed, which is replaced by the interface's
+IP address.  Example:
+.Lk https://%s:8080/index.php
 .It Fl r Ar SEC
 Interface refresh interval (5-1800), default 600 sec
 .It Fl s

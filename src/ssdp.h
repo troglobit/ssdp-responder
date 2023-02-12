@@ -94,7 +94,7 @@ struct ifsock {
 extern int log_level;
 extern int log_opts;
 extern char uuid[42];
-extern char url[256];
+extern char url[128];
 extern char mfrurl[128];
 extern char mfrnm[128];
 
