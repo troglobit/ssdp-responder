@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <net/if.h>
@@ -99,13 +100,39 @@ static char *compose_url(char *addr)
 	return buf;
 }
 
+static char *compose_time(void)
+{
+       const char *rfc1123fmt = "%a, %d %b %Y %H:%M:%S GMT";
+       static char buf[100];
+       time_t now;
+
+       now = time(NULL);
+       strftime(buf, sizeof(buf), rfc1123fmt, gmtime(&now));
+
+       return buf;
+}
+
+static int validate_http(int sd, char *http)
+{
+	if (!http || (strncmp(http, "HTTP/1.0", 8) != 0 &&
+		      strncmp(http, "HTTP/1.1", 8) != 0)) {
+		if (write(sd, "HTTP/1.1 400 Bad Request\r\n", 26) < 0)
+			logit(LOG_WARNING, "Failed returning status 400 to client: %s", strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
 static int respond(int sd, struct sockaddr_in *sin)
 {
 	struct pollfd pfd = {
 		.fd = sd,
 		.events = POLLIN,
 	};
-	char *head = "HTTP/1.1 200 OK\r\n"
+	const char *head = "HTTP/1.1 200 OK\r\n"
+		"Date: %s\r\n"
+		"Server: ssdp-responder/%s\r\n"
 		"Content-Type: text/xml\r\n"
 		"Connection: close\r\n"
 		"\r\n";
@@ -133,17 +160,24 @@ static int respond(int sd, struct sockaddr_in *sin)
 
 	logit(LOG_DEBUG, "%s", mesg);
 	reqline[0] = strtok(mesg, " \t\n");
-	if (strncmp(reqline[0], "GET", 4) == 0) {
-		reqline[1] = strtok(NULL, " \t");
-		reqline[2] = strtok(NULL, " \t\n");
-		if (strncmp(reqline[2], "HTTP/1.0", 8) != 0 && strncmp(reqline[2], "HTTP/1.1", 8) != 0) {
-			if (write(sd, "HTTP/1.1 400 Bad Request\r\n", 26) < 0)
-				logit(LOG_WARNING, "Failed returning status 400 to client: %s", strerror(errno));
+	reqline[1] = strtok(NULL, " \t");
+	reqline[2] = strtok(NULL, " \t\n");
+
+	if (!reqline[0]) {
+		return -1;
+	} else if (strncmp(reqline[0], "HEAD", 5) == 0) {
+		if (validate_http(sd, reqline[2]))
 			return -1;
-		}
+
+		snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION);
+		if (send(sd, mesg, strlen(mesg), 0) < 0)
+			return -1;
+	} else if (strncmp(reqline[0], "GET", 4) == 0) {
+		if (validate_http(sd, reqline[2]))
+			return -1;
 
 		/* XXX: Add support for icon as well */
-		if (!strstr(reqline[1], LOCATION_DESC)) {
+		if (!reqline[1] || !strstr(reqline[1], LOCATION_DESC)) {
 			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
 				logit(LOG_WARNING, "Failed returning status 404 to client: %s", strerror(errno));
 			return -1;
@@ -155,10 +189,8 @@ static int respond(int sd, struct sockaddr_in *sin)
 				 "  <manufacturerURL>%s</manufacturerURL>\r\n", mfrurl);
 
 		logit(LOG_DEBUG, "Sending XML reply ...");
-		if (send(sd, head, strlen(head), 0) < 0)
-			goto fail;
-
-		snprintf(mesg, sizeof(mesg), xml,
+		rc = snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION);
+		snprintf(&mesg[rc], sizeof(mesg) - rc, xml,
 			 hostname,
 			 mfrnm,
 			 manufacturer_url,
@@ -166,7 +198,6 @@ static int respond(int sd, struct sockaddr_in *sin)
 			 uuid,
 			 compose_url(inet_ntoa(sin->sin_addr)));
 		if (send(sd, mesg, strlen(mesg), 0) < 0) {
-		fail:
 			logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));
 			return -1;
 		}
