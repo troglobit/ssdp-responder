@@ -109,6 +109,7 @@ void logit(int severity, const char *format, ...);
 
 struct ifsock *ssdp_find(struct sockaddr *sa);
 void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg);
+size_t ssdp_num_sockets(void);
 
 int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd));
 int ssdp_exit(void);

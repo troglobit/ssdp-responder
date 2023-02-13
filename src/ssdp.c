@@ -279,6 +279,21 @@ void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg)
 		cb(ifs, arg);
 }
 
+/* Number of SSDP sockets, not counting the web socket */
+size_t ssdp_num_sockets(void)
+{
+	struct ifsock *ifs;
+	size_t num = 0;
+
+	LIST_FOREACH(ifs, &il, link) {
+		if (ifs->ifname[0])
+			num++;
+	}
+	logit(LOG_DEBUG, "We have %zd sockets open.", num);
+
+	return num;
+}
+
 static int socket_open(char *ifname, struct sockaddr *addr, int ttl, int srv)
 {
 	struct sockaddr_in sin, *address = (struct sockaddr_in *)addr;
