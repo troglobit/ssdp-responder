@@ -390,6 +390,7 @@ int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 {
 	struct ifaddrs *ifaddrs, *ifa;
 	int modified;
+	int dnum = 0;
 	size_t i;
 
 	logit(LOG_INFO, "Updating interfaces ...");
@@ -421,6 +422,8 @@ int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 	for (ifa = ifaddrs; ifa; ifa = ifa->ifa_next) {
 		int sd;
 
+		logit(LOG_DEBUG, "Got %s, preparing ...", ifa->ifa_name);
+
 		/* Interface filtering, optional command line argument */
 		if (filter_iface(ifa->ifa_name, iflist, num)) {
 			logit(LOG_DEBUG, "Skipping %s, not in iflist.", ifa->ifa_name);
@@ -428,8 +431,10 @@ int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 		}
 
 		/* Do we have another in the same subnet? */
-		if (filter_addr(ifa->ifa_addr))
+		if (filter_addr(ifa->ifa_addr)) {
+			logit(LOG_DEBUG, "Skipping %s, filtered.", ifa->ifa_name);
 			continue;
+		}
 
 		/* OpenVPN workaround, issue #6 */
 		if ((ifa->ifa_flags & IFF_POINTOPOINT) && !strncmp(ifa->ifa_name, "tun", 3)) {
@@ -443,8 +448,11 @@ int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 		}
 
 		sd = socket_open(ifa->ifa_name, ifa->ifa_addr, ttl, srv);
-		if (sd < 0)
+		if (sd < 0) {
+			logit(LOG_DEBUG, "Failed opening socket on %s, error %d: %s",
+			      ifa->ifa_name, errno, strerror(errno));
 			continue;
+		}
 
 #ifdef __linux__
 		multicast_loop(sd);
@@ -453,16 +461,18 @@ int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 		if (!multicast_join(sd, ifa->ifa_addr))
 			logit(LOG_DEBUG, "Joined group %s on interface %s", MC_SSDP_GROUP, ifa->ifa_name);
 
-		if (ssdp_register(sd, ifa->ifa_addr, ifa->ifa_netmask, cb)) {
+		if (ssdp_register(sd, ifa->ifa_name, ifa->ifa_addr, ifa->ifa_netmask, cb)) {
 			close(sd);
 			break;
 		}
 
-		logit(LOG_DEBUG, "Registered socket %d with ssd_recv() callback", sd);
+		logit(LOG_DEBUG, "Registered socket %d with ssdp_recv() callback", sd);
 		modified++;
+		dnum++;
 	}
 
 	freeifaddrs(ifaddrs);
+	logit(LOG_DEBUG, "Set up %d interfaces.", dnum);
 
 	return modified;
 }
