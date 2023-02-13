@@ -81,11 +81,12 @@
 struct ifsock {
 	LIST_ENTRY(ifsock) link;
 
-	int stale;
-	int mod;
+	char ifname[16];
+	int  stale;
+	int  mod;
 
 	/* Interface socket, one per interface address */
-	int sd;
+	int  sd;
 
 	/* Interface address and netmask */
 	struct sockaddr_in addr;
@@ -112,7 +113,7 @@ void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg);
 int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd));
 int ssdp_exit(void);
 
-int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
+int ssdp_register(int sd, char *ifname, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd));
 int ssdp_poll(int timeout);
 
 #endif /* SSDP_H_ */

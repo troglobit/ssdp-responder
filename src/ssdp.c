@@ -243,7 +243,7 @@ int ssdp_poll(int timeout)
 	return num;
 }
 
-int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
+int ssdp_register(int sd, char *ifname, struct sockaddr *addr, struct sockaddr *mask, void (*cb)(int sd))
 {
 	struct sockaddr_in *address = (struct sockaddr_in *)addr;
 	struct sockaddr_in *netmask = (struct sockaddr_in *)mask;
@@ -260,6 +260,8 @@ int ssdp_register(int sd, struct sockaddr *addr, struct sockaddr *mask, void (*c
 	ifs->sd   = sd;
 	ifs->mod  = 1;
 	ifs->cb   = cb;
+	if (ifname)
+		strlcpy(ifs->ifname, ifname, sizeof(ifs->ifname));
 	if (address)
 		ifs->addr = *address;
 	if (mask)
