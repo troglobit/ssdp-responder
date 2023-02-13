@@ -289,6 +289,9 @@ static void drop_privs(void)
 {
 	struct passwd *pw;
 
+	if (chdir("/"))
+		logit(LOG_WARNING, "Failed 'cd /': %s", strerror(errno));
+
 	if (getuid())
 		return;
 
