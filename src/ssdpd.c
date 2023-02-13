@@ -16,6 +16,9 @@
  */
 
 #include <sys/utsname.h>	/* uname() for !__linux__ */
+#include <sys/types.h>
+#include <pwd.h>
+
 #include "ssdp.h"
 
 char  server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
@@ -280,6 +283,29 @@ static void announce(struct ifsock *ifs, int mod)
 
 		send_message(ifs, supported_types[i], NULL, 0);
 	}
+}
+
+static void drop_privs(void)
+{
+	struct passwd *pw;
+
+	if (getuid())
+		return;
+
+	pw = getpwnam("ssdp");
+	if (!pw)
+		pw = getpwnam("nobody");
+	if (!pw) {
+	fail:
+		logit(LOG_WARNING, "Failed dropping root privileges: %s", strerror(errno));
+		return;
+	}
+
+	logit(LOG_NOTICE, "Dropping privileges to user %s (%d:%d)", pw->pw_name, pw->pw_uid, pw->pw_gid);
+	if (setgid(pw->pw_gid))
+		goto fail;
+	if (setuid(pw->pw_uid))
+		goto fail;
 }
 
 static char *strip_quotes(char *str)
@@ -640,7 +666,9 @@ int main(int argc, char *argv[])
 	else
 		snprintf(location, sizeof(location), "http://%s:%d%s",
 			 "%s", LOCATION_PORT, LOCATION_DESC);
+
 	pidfile(PACKAGE_NAME);
+	drop_privs();
 
 	while (running) {
 		now = time(NULL);

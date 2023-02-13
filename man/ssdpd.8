@@ -70,6 +70,19 @@ Note, depending on your system this directory may be wiped on reboot, so
 may start up with a different UUID every time.  Use
 .Fl c Ar FILE
 to work around that.
+.Pp
+As soon as the UUID is saved or read from the cache file, and the PID
+file has been created,
+.Nm
+drops any root privileges it may have beeen started with.  The preferred
+user to drop to is
+.Cm ssdp ,
+but if that is not set up in the system, user
+.Cm nobody
+is used as a fallback.  In the event that user is also missing,
+.Nm
+will log a warning and continue running as
+.Cm root .
 .Sh OPTIONS
 The following command line options are available:
 .Bl -tag -width "-l LEVEL "
