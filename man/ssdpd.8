@@ -28,6 +28,7 @@
 .Op Fl M Ar URL
 .Op Fl p Ar URL
 .Op Fl r Ar SEC
+.Op Fl R Ar NUM
 .Op Fl t Ar TTL
 .Io Fl u Ar UUID
 .Op Ar IFACE Op Ar IFACE Op Ar ...
@@ -136,6 +137,16 @@ IP address.  Example:
 .Lk https://%s:8080/index.php
 .It Fl r Ar SEC
 Interface refresh interval (5-1800), default 600 sec
+.It Fl R Ar NUM
+Initial number of retries to get a valid SSDP discovery socket when
+starting up, default 3.
+.Pp
+When starting up the system may not yet have any interface up with a
+valid IP address.  By default,
+.Nm
+retries 3 times, using a hard-coded 10 sec refresh interval, before
+reverting to the regular refresh interval,
+.Fl r .
 .It Fl s
 Use syslog, default unless running in foreground,
 .Fl n .

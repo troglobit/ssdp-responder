@@ -481,7 +481,7 @@ static void signal_init(void)
 static int usage(int code)
 {
 	printf("Usage: %s [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]\n"
-	       "                      [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
+	       "                      [-r SEC] [-R NUM] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
 	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"
@@ -492,6 +492,7 @@ static int usage(int code)
 	       "    -M URL    Override manufacturerURL in the default description.xml\n"
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
+	       "    -R NUM    Initial retries, using 10 sec refresh interval, default 3 times\n"
 	       "    -p URL    Override presentationURL (WebUI) in the default description.xml\n"
 	       "              The '%%s' is replaced with the IP address.  Default: http://%%s/\n"
 	       "    -s        Use syslog, default unless running in foreground, -n\n"
@@ -523,7 +524,7 @@ int main(int argc, char *argv[])
 	int do_web = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "d:hi:l:m:M:np:r:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "d:hi:l:m:M:np:r:R:st:u:vw")) != EOF) {
 		switch (c) {
 		case 'd':
 			description = optarg;
@@ -565,6 +566,10 @@ int main(int argc, char *argv[])
 			refresh = atoi(optarg);
 			if (refresh < 5 || refresh > 1800)
 				errx(1, "Invalid refresh interval (5-1800).");
+			break;
+
+		case 'R':
+			inicnt = atoi(optarg);
 			break;
 
 		case 's':

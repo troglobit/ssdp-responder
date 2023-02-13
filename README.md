@@ -21,7 +21,7 @@ Usage
 
 ```
 Usage: ssdpd [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
-                      [-r SEC] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
+                      [-r SEC] [-R NUM] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
 
     -d URL    Override UPnP description.xml URL in announcements.  The '%s' in
               the URL is replaced with the IP, e.g. https://%s:1901/main.xml
@@ -32,6 +32,7 @@ Usage: ssdpd [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
     -M URL    Override manufacturerURL in the default description.xml
     -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
+    -R NUM    Initial retries, using 10 sec refresh interval, default 3 times
     -p URL    Override presentationURL (WebUI) in the default description.xml
               The '%s' is replaced with the IP address.  Default: http://%s/
     -s        Use syslog, default unless running in foreground, -n
