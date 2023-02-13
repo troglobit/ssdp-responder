@@ -7,7 +7,10 @@ All notable changes to the project are documented in this file.
 [v1.10][UNRELEASED]
 ---------------------
 
+The drop privs release.
+
 ### Changes
+ - Add support for `-c NAME` to override `ssdpd` UUID cache file
  - Add support for `-d URL` to override the UPnP description URL, a
    single `%s` is supported to be replaced with the interface address
  - Add support for `-m NAME` to override the `manufacturer` in the
@@ -23,12 +26,18 @@ All notable changes to the project are documented in this file.
    have the alternate web server running on port 1901 to serve the file
    `/description.xml`, see also `-d URL` above, which details the
    location of the UPnP description URL
+ - Increased debug messages in `ssdp_init()`, for troubleshooting
+ - Add support for an initial retry interval at startup, in case ssdpd
+   is started before any interface has been configured.  Configurable
+   retry count using `-R NUM` command line option
 
 ### Fixes
  - Fix #11: periodic busy loop causing intermittent 100% CPU load
  - Fix invalid `<UDN>uuid:uuid:...</UDN>` in `description.xml`
  - Add `Date:` and `Server:` to HTTP header in micro HTTP server
  - Add support for HTTP HEAD requests to micro HTTP server
+ - Handle case when `/etc/os-release` does not have `VERSION_ID` fall
+   back to use `VERSION_CODENAME`
  - Don't overwrite CPPFLAGS from the command line
  - Portability fix to `utimensat()` replacement function
 
