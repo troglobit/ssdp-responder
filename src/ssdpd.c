@@ -515,6 +515,8 @@ int main(int argc, char *argv[])
 	int background = 1;
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
+	int initial = 10;
+	int inicnt = 3;
 	int ttl = MC_TTL_DEFAULT;
 	char *description = NULL;
 	int do_syslog = 1;
@@ -619,7 +621,17 @@ int main(int argc, char *argv[])
 				logit(LOG_INFO, "Sending SSDP NOTIFY on new interfaces ...");
 				ssdp_foreach(announce, 1);
 			}
-			rtmo = now + refresh;
+
+			/*
+			 * If we haven't got any sockets open yet, or we've
+			 * just started up.  Handle things differently, we may
+			 * start well before we get an initial DHCP lease.
+			 */
+			if (!ssdp_num_sockets() && inicnt > 0) {
+				rtmo = now + initial;
+				inicnt--;
+			} else
+				rtmo = now + refresh;
 		}
 
 		if (itmo <= now) {
