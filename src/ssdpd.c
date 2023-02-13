@@ -328,6 +328,12 @@ static int os_init(void)
 				free(ver);
 			ver = strdup(strip_quotes(++ptr));
 		}
+
+		if (!strncmp(line, "VERSION_CODENAME", 16) && (ptr = strchr(line, '='))) {
+			logit(LOG_DEBUG, "Found VERSION_CODENAME:%s", ptr + 1);
+			if (!ver)
+				ver = strdup(strip_quotes(++ptr));
+		}
 	}
 
 	logit(LOG_DEBUG, "Found os:%s ver:%s", os, ver);
