@@ -21,6 +21,7 @@
 char  server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 char  location[128];
 char  hostname[64];
+char *cachefn = NULL;
 char *ver = NULL;
 char *os  = NULL;
 #ifdef MANUFACTURER_URL
@@ -415,6 +416,11 @@ static FILE *fopen_cache(char *mode, char *fn, size_t len)
 {
 	FILE *fp;
 
+	if (cachefn) {
+		strlcpy(fn, cachefn, len);
+		return fopen(fn, mode);
+	}
+
 	snprintf(fn, len, _CACHEDIR "/" PACKAGE_NAME ".cache");
 	fp = fopen(fn, mode);
 	if (!fp) {
@@ -441,6 +447,8 @@ static void uuidgen(void)
 		fp = fopen_cache("w", file, sizeof(file));
 		if (!fp)
 			logit(LOG_WARNING, "Cannot create UUID cache, %s: %s", file, strerror(errno));
+		else
+			logit(LOG_DEBUG, "Opened cache file %s for saving UUID", file);
 
 		srand(time(NULL));
 		snprintf(buf, sizeof(buf), "uuid:%8.8x-%4.4x-%4.4x-%4.4x-%6.6x%6.6x",
@@ -456,6 +464,7 @@ static void uuidgen(void)
 			fclose(fp);
 		}
 	} else {
+		logit(LOG_DEBUG, "Opened UUID cache file %s", file);
 		if (!fgets(buf, sizeof(buf), fp)) {
 			fclose(fp);
 			goto generate;
@@ -467,6 +476,10 @@ static void uuidgen(void)
 	strcpy(uuid, buf);
 custom:
 	logit(LOG_DEBUG, "URN: %s", uuid);
+	if (cachefn) {
+		free(cachefn);
+		cachefn = NULL;
+	}
 }
 
 static void exit_handler(int signo)
@@ -486,9 +499,10 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]\n"
+	printf("Usage: %s [-hnsvw] [-c FILE] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]\n"
 	       "                      [-r SEC] [-R NUM] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
 	       "\n"
+	       "    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID\n"
 	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
 	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"
 	       "    -h        This help text\n"
@@ -530,8 +544,12 @@ int main(int argc, char *argv[])
 	int do_web = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "d:hi:l:m:M:np:r:R:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "c:d:hi:l:m:M:np:r:R:st:u:vw")) != EOF) {
 		switch (c) {
+		case 'c':
+			cachefn = strdup(optarg);
+			break;
+
 		case 'd':
 			description = optarg;
 			break;

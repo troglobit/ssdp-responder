@@ -21,6 +21,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl hnsvw
+.Op Fl c Ar FILE
 .Op Fl d Ar URL
 .Op Fl i Ar SEC
 .Op Fl l Ar LEVEL
@@ -66,10 +67,22 @@ on *BSD systems it is stored in
 .Pa /var/db/ssdpd.cache .
 Note, depending on your system this directory may be wiped on reboot, so
 .Nm
-may start up with a different UUID every time.
+may start up with a different UUID every time.  Use
+.Fl c Ar FILE
+to work around that.
 .Sh OPTIONS
 The following command line options are available:
 .Bl -tag -width "-l LEVEL "
+.It Fl c Ar FILE
+When started as non-root it is usually not possible to write files in
+the
+.Pa /var/lib/misc/ ,
+or
+.Pa /var/db/ ,
+directory.  Use this option to specify the full path to an alternate
+cache file where
+.Nm
+can store and/or read the UUID.
 .It Fl d Ar URL
 Override the UPnP description URL in SSDP announcement messages and
 replies, default:

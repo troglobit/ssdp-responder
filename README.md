@@ -20,9 +20,10 @@ Usage
 -----
 
 ```
-Usage: ssdpd [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
+Usage: ssdpd [-hnsvw] [-c FILE] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
                       [-r SEC] [-R NUM] [-t TTL] [-u UUID] [IFACE [IFACE ...]]
 
+    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID
     -d URL    Override UPnP description.xml URL in announcements.  The '%s' in
               the URL is replaced with the IP, e.g. https://%s:1901/main.xml
     -h        This help text
