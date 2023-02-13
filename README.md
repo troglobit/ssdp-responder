@@ -32,8 +32,8 @@ Usage: ssdpd [-hnsvw] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]
     -M URL    Override manufacturerURL in the default description.xml
     -n        Run in foreground, do not daemonize by default
     -r SEC    Interface refresh interval (5-1800), default 600 sec
-    -p URL    Override presentationURL in description.xml.  The '%s' in the
-              URL is replaced with the IP address.  Default: http://%s/
+    -p URL    Override presentationURL (WebUI) in the default description.xml
+              The '%s' is replaced with the IP address.  Default: http://%s/
     -s        Use syslog, default unless running in foreground, -n
     -t TTL    TTL for multicast frames, default 2, according to the UDA
     -u UUID   Custom UUID instead of auto-generating one
