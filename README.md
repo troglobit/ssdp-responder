@@ -15,6 +15,13 @@ Also included is the `ssdp-scan` tool, which continuously scans for
 SSDP capable hosts on the network.  Take care only to use this for
 debugging since it scans the network quite aggressively.
 
+> **Note:** when `ssdpd` is started as root it will drop privileges as
+> soon as it has created its UUID cache and PID file.  It is recommended
+> to have a dedicated `ssdp` user (and group) available in the system
+> for this purpose.  As a fallback, user `nobody` (and `nogroup`) is
+> used.  When started as non-root, make sure to provide a path for the
+> cache file with the `-c FILE` option.
+
 
 Usage
 -----
@@ -53,9 +60,6 @@ sent on.  For example:
     ssdpd -d https://%s:1901/description.xml
 
 See `configure --help` for some build time options.
-
-> **Note:** previous releases did *not* daemonize, you will have to
-> update your start scripts to include `-n` as of v1.6
 
 
 Example
