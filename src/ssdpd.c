@@ -528,8 +528,8 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsvw] [-c FILE] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL] [-p URL]\n"
-	       "                      [-r SEC] [-R NUM] [-t TTL] [-u UUID] [IFACE [IFACE ...]]\n"
+	printf("Usage: %s [-hnsvw] [-c FILE] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL]\n"
+	       "                       [-p URL] [-r SEC] [-R NUM] [-t TTL] [-u UUID] [IFACE...]\n"
 	       "\n"
 	       "    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID\n"
 	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
