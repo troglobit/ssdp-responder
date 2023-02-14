@@ -87,7 +87,16 @@ is used as a fallback.  In the event that user is also missing,
 will log a warning and continue running as
 .Cm root .
 .Sh OPTIONS
-The following command line options are available:
+.Nm
+starts without any options or arguments.  By default it forks to the
+background, as a regular UNIX daemon, and runs on all interfaces that
+are up and have an IPv4 address.  New and deleted interfaces are
+discovered at runtime.  To run on a subset of interfaces, append the
+interface name as an argument.
+.Pp
+To control other aspects of
+.Nm ,
+the following command line options are available:
 .Bl -tag -width "-l LEVEL "
 .It Fl c Ar FILE
 When started as non-root it is usually not possible to write files in
