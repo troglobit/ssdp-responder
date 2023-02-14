@@ -12,7 +12,7 @@
 .\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
-.Dd Oct 22, 2022
+.Dd Feb 14, 2023
 .Dt ssdpd 8
 .Os
 .Sh NAME
@@ -28,6 +28,7 @@
 .Op Fl m Ar NAME
 .Op Fl M Ar URL
 .Op Fl p Ar URL
+.Op Fl P Ar FILE
 .Op Fl r Ar SEC
 .Op Fl R Ar NUM
 .Op Fl t Ar TTL
@@ -173,6 +174,9 @@ relative
 A single '%s' modifier is allowed, which is replaced by the interface's
 IP address.  Example:
 .Lk https://%s:8080/index.php
+.It Fl P Ar FILE
+Override default PID file location, absolute path required, default:
+.Pa /run/ssdpd.pid
 .It Fl r Ar SEC
 Interface refresh interval (5-1800), default 600 sec
 .It Fl R Ar NUM

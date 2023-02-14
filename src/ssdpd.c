@@ -529,7 +529,8 @@ static void signal_init(void)
 static int usage(int code)
 {
 	printf("Usage: %s [-hnsvw] [-c FILE] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL]\n"
-	       "                       [-p URL] [-r SEC] [-R NUM] [-t TTL] [-u UUID] [IFACE...]\n"
+	       "                      [-p URL] [-P FILE] [-r SEC] [-R NUM] [-t TTL] [-u UUID]\n"
+	       "                      [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID\n"
 	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
@@ -543,6 +544,7 @@ static int usage(int code)
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -R NUM    Initial retries, using 10 sec refresh interval, default 3 times\n"
 	       "    -p URL    Override presentationURL (WebUI) in the default description.xml\n"
+	       "    -P FILE   Override PID file location, absolute path required\n"
 	       "              The '%%s' is replaced with the IP address.  Default: http://%%s/\n"
 	       "    -s        Use syslog, default unless running in foreground, -n\n"
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
@@ -569,11 +571,12 @@ int main(int argc, char *argv[])
 	int inicnt = 3;
 	int ttl = MC_TTL_DEFAULT;
 	char *description = NULL;
+	char *pidfn = PACKAGE_NAME;
 	int do_syslog = 1;
 	int do_web = 1;
 	int c;
 
-	while ((c = getopt(argc, argv, "c:d:hi:l:m:M:np:r:R:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "c:d:hi:l:m:M:np:P:r:R:st:u:vw")) != EOF) {
 		switch (c) {
 		case 'c':
 			cachefn = strdup(optarg);
@@ -613,6 +616,10 @@ int main(int argc, char *argv[])
 
 		case 'p':
 			strlcpy(url, optarg, sizeof(url));
+			break;
+
+		case 'P':
+			pidfn = optarg;
 			break;
 
 		case 'r':
@@ -670,7 +677,7 @@ int main(int argc, char *argv[])
 		snprintf(location, sizeof(location), "http://%s:%d%s",
 			 "%s", LOCATION_PORT, LOCATION_DESC);
 
-	pidfile(PACKAGE_NAME);
+	pidfile(pidfn);
 	drop_privs();
 
 	while (running) {
