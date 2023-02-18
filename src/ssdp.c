@@ -337,21 +337,6 @@ static int socket_open(char *ifname, struct sockaddr *addr, int ttl, int srv)
 	return sd;
 }
 
-int ssdp_exit(void)
-{
-	struct ifsock *ifs, *tmp;
-	int ret = 0;
-
-	LIST_FOREACH_SAFE(ifs, &il, link, tmp) {
-		LIST_REMOVE(ifs, link);
-		if (ifs->sd != -1)
-			ret |= close(ifs->sd);
-		free(ifs);
-	}
-
-	return ret;
-}
-
 /*
  * This one differs between BSD and Linux in that on BSD this
  * disables looping multicast back to all *other* sockets on
@@ -475,6 +460,21 @@ int ssdp_init(int ttl, int srv, char *iflist[], size_t num, void (*cb)(int sd))
 	logit(LOG_DEBUG, "Set up %d interfaces.", dnum);
 
 	return modified;
+}
+
+int ssdp_exit(void)
+{
+	struct ifsock *ifs, *tmp;
+	int ret = 0;
+
+	LIST_FOREACH_SAFE(ifs, &il, link, tmp) {
+		LIST_REMOVE(ifs, link);
+		if (ifs->sd != -1)
+			ret |= close(ifs->sd);
+		free(ifs);
+	}
+
+	return ret;
 }
 
 /**
