@@ -5,6 +5,7 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
+ID
 Makefile
 Makefile.in
 aclocal.m4
