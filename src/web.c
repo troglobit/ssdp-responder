@@ -206,7 +206,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 	return 0;
 }
 
-void web_recv(int sd)
+static void web_recv(int sd)
 {
 	int client;
 	char ifname[IF_NAMESIZE + 1] = "UNKNOWN";
