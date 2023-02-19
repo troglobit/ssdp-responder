@@ -43,8 +43,8 @@ Usage: ssdpd [-hnsvw] [-c FILE] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL]
     -r SEC    Interface refresh interval (5-1800), default 600 sec
     -R NUM    Initial retries, using 10 sec refresh interval, default 3 times
     -p URL    Override presentationURL (WebUI) in the default description.xml
-    -P FILE   Override PID file location, absolute path required
               The '%s' is replaced with the IP address.  Default: http://%s/
+    -P FILE   Override PID file location, absolute path required
     -s        Use syslog, default unless running in foreground, -n
     -t TTL    TTL for multicast frames, default 2, according to the UDA
     -u UUID   Custom UUID instead of auto-generating one
