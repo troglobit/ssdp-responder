@@ -19,6 +19,8 @@ The drop privs release.
    default `description.xml`
  - Add support for `-p URL` to override the `presentationURL` in the
    default `description.xml`, a single `%s` is supported
+ - Add support for `-P FILE` to override the default PID file location
+   default `description.xml`, a single `%s` is supported
  - Add support for `-u UUID` to use a custom UUID, useful when the
    built-in micro HTTP server is disabled
  - Add support for `-w` to disable built-in micro HTTP server, useful
@@ -27,9 +29,14 @@ The drop privs release.
    `/description.xml`, see also `-d URL` above, which details the
    location of the UPnP description URL
  - Increased debug messages in `ssdp_init()`, for troubleshooting
+ - Add support for dropping root privileges after initial setup.  The
+   used `ssdp` is searched for first, with fallback to `nobody`
  - Add support for an initial retry interval at startup, in case ssdpd
    is started before any interface has been configured.  Configurable
    retry count using `-R NUM` command line option
+ - Add support for an IP address monitor using Linux netlink interfaces
+   coming and going at runtime.  Meaning, `-R NUM` is unused on Linux.
+   For this to work, `ssdpd` must start as root or have `CAP_NET_RAW`
 
 ### Fixes
  - Fix #11: periodic busy loop causing intermittent 100% CPU load
