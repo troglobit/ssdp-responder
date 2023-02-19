@@ -24,6 +24,7 @@
 char  server_string[64] = "POSIX UPnP/1.0 " PACKAGE_NAME "/" PACKAGE_VERSION;
 char  location[128];
 char  hostname[64];
+int   ttl = MC_TTL_DEFAULT;
 char *cachefn = NULL;
 char *ver = NULL;
 char *os  = NULL;
@@ -36,6 +37,9 @@ char  mfrnm[128] = MANUFACTURER;
 char  uuid[42];
 char  url[128] = "http://%s/";
 
+char **ifs;
+size_t ifnum;
+
 static char *supported_types[] = {
 	SSDP_ST_ALL,
 	"upnp:rootdevice",
@@ -45,6 +49,7 @@ static char *supported_types[] = {
 };
 
 volatile sig_atomic_t running = 1;
+volatile sig_atomic_t recheck = 1;
 
 extern void web_init(void);
 
@@ -285,6 +290,14 @@ static void announce(struct ifsock *ifs, int mod)
 	}
 }
 
+void ssdpd_refresh(void)
+{
+	if (ssdp_init(ttl, 1, ifs, ifnum, ssdp_recv) > 0) {
+		logit(LOG_INFO, "Sending SSDP NOTIFY on new interfaces ...");
+		ssdp_foreach(announce, 1);
+	}
+}
+
 static void drop_privs(void)
 {
 	struct passwd *pw;
@@ -511,19 +524,26 @@ custom:
 	}
 }
 
-static void exit_handler(int signo)
+static void sighandler(int signo)
 {
-	(void)signo;
-	running = 0;
+	switch (signo) {
+	case SIGALRM:
+		recheck = 1;
+		break;
+	default:
+		running = 0;
+		break;
+	}
 }
 
 static void signal_init(void)
 {
-	signal(SIGTERM, exit_handler);
-	signal(SIGINT,  exit_handler);
-	signal(SIGHUP,  exit_handler);
-	signal(SIGQUIT, exit_handler);
+	signal(SIGTERM, sighandler);
+	signal(SIGINT,  sighandler);
+	signal(SIGHUP,  sighandler);
+	signal(SIGQUIT, sighandler);
 	signal(SIGPIPE, SIG_IGN); /* get EPIPE instead */
+	signal(SIGALRM, sighandler);
 }
 
 static int usage(int code)
@@ -543,6 +563,7 @@ static int usage(int code)
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -R NUM    Initial retries, using 10 sec refresh interval, default 3 times\n"
+	       "              Note: unused on systems with netlink interface monitoring.\n"
 	       "    -p URL    Override presentationURL (WebUI) in the default description.xml\n"
 	       "    -P FILE   Override PID file location, absolute path required\n"
 	       "              The '%%s' is replaced with the IP address.  Default: http://%%s/\n"
@@ -563,17 +584,17 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
-	time_t now, rtmo = 0, itmo = 0;
+	time_t itmo = 0;
 	int background = 1;
 	int interval = NOTIFY_INTERVAL;
 	int refresh = REFRESH_INTERVAL;
 	int initial = 10;
 	int inicnt = 3;
-	int ttl = MC_TTL_DEFAULT;
 	char *description = NULL;
 	char *pidfn = PACKAGE_NAME;
 	int do_syslog = 1;
 	int do_web = 1;
+	int nlmon = 0;
 	int c;
 
 	while ((c = getopt(argc, argv, "c:d:hi:l:m:M:np:P:r:R:st:u:vw")) != EOF) {
@@ -677,28 +698,34 @@ int main(int argc, char *argv[])
 		snprintf(location, sizeof(location), "http://%s:%d%s",
 			 "%s", LOCATION_PORT, LOCATION_DESC);
 
+	if (netlink_init() == 0)
+		nlmon = 1;
 	pidfile(pidfn);
 	drop_privs();
 
-	while (running) {
-		now = time(NULL);
+	ifnum = argc - optind;
+	ifs = calloc(ifnum, sizeof(char *));
+	for (size_t i = 0; i < ifnum; i++)
+		ifs[i] = argv[optind + i];
 
-		if (rtmo <= now) {
-			if (ssdp_init(ttl, 1, &argv[optind], argc - optind, ssdp_recv) > 0) {
-				logit(LOG_INFO, "Sending SSDP NOTIFY on new interfaces ...");
-				ssdp_foreach(announce, 1);
-			}
+	while (running) {
+		time_t now = time(NULL);
+
+		if (recheck) {
+			ssdpd_refresh();
 
 			/*
 			 * If we haven't got any sockets open yet, or we've
 			 * just started up.  Handle things differently, we may
 			 * start well before we get an initial DHCP lease.
 			 */
-			if (!ssdp_num_sockets() && inicnt > 0) {
-				rtmo = now + initial;
+			if (!nlmon && !ssdp_num_sockets() && inicnt > 0) {
+				alarm(initial);
 				inicnt--;
 			} else
-				rtmo = now + refresh;
+				alarm(refresh);
+
+			recheck = 0;
 		}
 
 		if (itmo <= now) {
@@ -707,11 +734,13 @@ int main(int argc, char *argv[])
 			itmo = now + interval;
 		}
 
-		wait_message(MIN(rtmo, itmo));
+		wait_message(itmo);
 	}
 
 	lsb_exit();
 	log_exit();
+	if (ifnum)
+		free(ifs);
 
 	return ssdp_exit();
 }

@@ -101,11 +101,17 @@ extern char uuid[42];
 extern char url[128];
 extern char mfrurl[128];
 extern char mfrnm[128];
+extern int  ttl;
+
+extern char **ifs;
+extern size_t ifnum;
 
 void log_init(int enable);
 void log_exit(void);
 int log_str2lvl(char *level);
 void logit(int severity, const char *format, ...);
+
+int netlink_init(void);
 
 struct ifsock *ssdp_find(struct sockaddr *sa);
 void ssdp_foreach(void (*cb)(struct ifsock *, int), int arg);

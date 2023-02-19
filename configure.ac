@@ -37,6 +37,9 @@ PKG_PROG_PKG_CONFIG
 # Check if some func is not in libc
 AC_CHECK_LIB([util], [pidfile])
 
+# Check for Linux Netlink support
+AC_CHECK_HEADERS([linux/netlink.h linux/rtnetlink.h])
+
 # Check for usually missing API's, which we can replace
 AC_REPLACE_FUNCS([pidfile strlcpy utimensat])
 AC_CONFIG_LIBOBJ_DIR([lib])
