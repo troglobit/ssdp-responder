@@ -4,7 +4,7 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v1.10][UNRELEASED]
+[v2.0][] - 2023-02-19
 ---------------------
 
 The drop privs release.
@@ -191,7 +191,8 @@ v1.0 - 2017-05-11
 Initial release
 
 
-[UNRELEASED]: https://github.com/troglobit/ssdp-responder/compare/v1.9...HEAD
+[UNRELEASED]: https://github.com/troglobit/ssdp-responder/compare/v2.0...HEAD
+[v2.0]: https://github.com/troglobit/ssdp-responder/compare/v1.9...v2.0
 [v1.9]: https://github.com/troglobit/ssdp-responder/compare/v1.8...v1.9
 [v1.8]: https://github.com/troglobit/ssdp-responder/compare/v1.7...v1.8
 [v1.7]: https://github.com/troglobit/ssdp-responder/compare/v1.6...v1.7
@@ -201,4 +202,3 @@ Initial release
 [v1.3]: https://github.com/troglobit/ssdp-responder/compare/v1.2...v1.3
 [v1.2]: https://github.com/troglobit/ssdp-responder/compare/v1.1...v1.2
 [v1.1]: https://github.com/troglobit/ssdp-responder/compare/v1.0...v1.1
-
