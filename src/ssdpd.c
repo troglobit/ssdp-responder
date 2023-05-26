@@ -511,7 +511,7 @@ static void uuidgen(void)
 			fclose(fp);
 			goto generate;
 		}
-		buf[strlen(buf) - 1] = 0;
+		buf[sizeof(buf) - 1] = 0;
 		fclose(fp);
 	}
 
