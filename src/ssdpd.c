@@ -511,11 +511,12 @@ static void uuidgen(void)
 			fclose(fp);
 			goto generate;
 		}
-		buf[strlen(buf) - 1] = 0;
+		if (buf[strlen(buf) - 1] == '\n')
+			buf[strlen(buf) - 1] = 0;
 		fclose(fp);
 	}
 
-	strcpy(uuid, buf);
+	strlcpy(uuid, buf, sizeof(uuid));
 custom:
 	logit(LOG_DEBUG, "URN: %s", uuid);
 	if (cachefn) {
