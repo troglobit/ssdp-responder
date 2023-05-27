@@ -4,6 +4,13 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
+[v2.1][UNRELEASED]
+---------------------
+
+### Fixes
+ - Fix #16: truncated UUID when reading from cache file.
+
+
 [v2.0][] - 2023-02-19
 ---------------------
 
