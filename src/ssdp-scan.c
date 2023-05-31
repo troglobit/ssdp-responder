@@ -16,6 +16,7 @@
  */
 
 #include <err.h>
+
 #include "ssdp.h"
 #include "queue.h"
 
@@ -64,12 +65,11 @@ static int host(char *name, char *url)
 
 static void progress(void)
 {
-	size_t num = 4;
+//	const char *style = ".oOOo.";
 	const char *style = "\\-/|";
 //	const char *style = ">v<^";
-//	size_t num = 6;
-//	const char *style = ".oOOo.";
 	static unsigned int i = 0;
+	size_t num = 4;
 
 	if (!atty)
 		return;
@@ -84,8 +84,8 @@ static void progress(void)
 static void ssdp_scan(struct ifsock *ifs, int arg)
 {
 	struct sockaddr_in sin;
-	ssize_t num;
 	char buf[200];
+	ssize_t num;
 	int len;
 
 	(void)arg;
@@ -114,7 +114,6 @@ static void ssdp_scan(struct ifsock *ifs, int arg)
 
 static char *find(char *buf, const char *search)
 {
-	size_t len;
 	char *ptr;
 
 	ptr = strcasestr(buf, search);
@@ -141,9 +140,9 @@ static char *trim(char *ptr)
 
 static int xml(char *buf, char *tagn, char *val, size_t vlen)
 {
-	size_t len;
 	char *ptr, *end;
 	char tag[20];
+	size_t len;
 
 	len = snprintf(tag, sizeof(tag), "<%s>", tagn);
 	ptr = strstr(buf, tag);
@@ -238,11 +237,10 @@ static void printsrv(char *srv, char *loc)
 
 static void ssdp_read(int sd)
 {
+	char buf[512];
 	ssize_t len;
 	char *loc;
 	char *srv;
-	char *ptr;
-	char buf[512];
 
 	memset(buf, 0, sizeof(buf));
 	len = recv(sd, buf, sizeof(buf) - 1, 0);
@@ -277,7 +275,7 @@ static int usage(int code)
 	printf("Usage: ssdp-scan [-h] [-l LEVEL] [-t SEC] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -h        This help text\n"
-		   "    -l LEVEL  Set log level: none, err, notice (default), info, debug\n"
+	       "    -l LEVEL  Set log level: none, err, notice (default), info, debug\n"
 	       "    -t SEC    Timeout and exit after SEC seconds.\n"
 	       "\n"
 	       "Bug report address : %s\n", PACKAGE_BUGREPORT);
@@ -290,7 +288,6 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
-	struct pollfd pfd[MAX_NUM_IFACES];
 	int throttle = 1;
 	int timeout = 0;
 	int c;
