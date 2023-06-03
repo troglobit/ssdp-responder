@@ -472,7 +472,7 @@ static FILE *fopen_cache(char *mode, char *fn, size_t len)
 
 		/* fallback if /var/lib/misc doesn't exist */
 		if (!fp && errno == ENOENT && mode[0] == 'w') {
-			mkdir("/var/lib/" PACKAGE_NAME, 0755);
+			(void)mkdir("/var/lib/" PACKAGE_NAME, 0755);
 			snprintf(fn, len, "/var/lib/%s/uuid.cache", PACKAGE_NAME);
 			fp = fopen(fn, mode);
 		}
