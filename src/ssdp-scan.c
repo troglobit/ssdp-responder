@@ -34,6 +34,8 @@ LIST_HEAD(, host) hl = LIST_HEAD_INITIALIZER();
 
 volatile sig_atomic_t running = 1;
 static int atty;
+static int json;
+static int once;
 
 extern FILE *uget(char *url);
 
@@ -71,7 +73,7 @@ static void progress(void)
 	static unsigned int i = 0;
 	size_t num = 4;
 
-	if (!atty)
+	if (!atty || json)
 		return;
 
 //	printf("%u %% %zd = %lu (%u / %zd = %lu)\n", i, num, i % num, i, num, i / num);
@@ -180,6 +182,17 @@ static void parse(FILE *fp, char **name, char **url)
 	}
 }
 
+static void print(char *name, char *url)
+{
+	if (json)
+		printf("%s  {\n"
+		       "    \"name\": \"%s\",\n"
+		       "    \"url\": \"%s\"\n"
+		       "  }", once++ ? ",\n" : "", name, url);
+	else
+		printf("\r+ %-40s  %s\n", name, url);
+}
+
 static void printsrv(char *srv, char *loc)
 {
 	char *name = NULL, *url = NULL;
@@ -197,7 +210,7 @@ static void printsrv(char *srv, char *loc)
 	fp = uget(loc);
 	if (!fp) {
 	fallback:
-		printf("\r+ %-40s  %s\n", trim(srv), trim(loc));
+		print(trim(srv), trim(loc));
 		free(copy);
 		return;
 	}
@@ -230,7 +243,7 @@ static void printsrv(char *srv, char *loc)
 	}
 
 	if (!host(name, url))
-		printf("\r+ %-40s  %s\n", name, url);
+		print(name, url);
 
 	free(copy);
 }
@@ -273,9 +286,10 @@ static void bye(int signo)
 
 static int usage(int code)
 {
-	printf("Usage: ssdp-scan [-h] [-l LEVEL] [-t SEC] [IFACE [IFACE ...]]\n"
+	printf("Usage: ssdp-scan [-hj] [-l LEVEL] [-t SEC] [IFACE [IFACE ...]]\n"
 	       "\n"
 	       "    -h        This help text\n"
+	       "    -j        JSON output, best used with -t SEC option"
 	       "    -l LEVEL  Set log level: none, err, notice (default), info, debug\n"
 	       "    -t SEC    Timeout and exit after SEC seconds.\n"
 	       "\n"
@@ -294,10 +308,16 @@ int main(int argc, char *argv[])
 	int c;
 
 	log_level = LOG_NOTICE;
-	while ((c = getopt(argc, argv, "hl:t:")) != EOF) {
+	atty = isatty(STDOUT_FILENO);
+
+	while ((c = getopt(argc, argv, "hjl:t:")) != EOF) {
 		switch (c) {
 		case 'h':
 			return usage(0);
+
+		case 'j':
+			json = 1;
+			break;
 
 		case 'l':
 			log_level = log_str2lvl(optarg);
@@ -314,7 +334,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	atty = isatty(STDOUT_FILENO);
 	signal(SIGINT, bye);
 	signal(SIGALRM, bye);
 
@@ -330,6 +349,9 @@ int main(int argc, char *argv[])
 
 	hidecursor();
 	progress();
+
+	if (json)
+		printf("[\n");
 
 	ssdp_foreach(ssdp_scan, 1);
 
@@ -353,6 +375,9 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+
+	if (json)
+		printf("%s]\n", once ? "\n" : "");
 
 	showcursor();
 	log_exit();
