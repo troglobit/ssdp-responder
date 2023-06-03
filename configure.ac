@@ -38,7 +38,7 @@ PKG_PROG_PKG_CONFIG
 AC_CHECK_LIB([util], [pidfile])
 
 # Check for Linux Netlink support
-AC_CHECK_HEADERS([linux/netlink.h linux/rtnetlink.h])
+AC_CHECK_HEADERS([linux/netlink.h linux/rtnetlink.h termios.h])
 
 # Check for usually missing API's, which we can replace
 AC_REPLACE_FUNCS([pidfile strlcpy utimensat])

@@ -15,13 +15,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
  */
 
-#include <err.h>
-
 #include "ssdp.h"
 #include "queue.h"
 
-#define hidecursor() if (atty) fputs ("\e[?25l", stdout)
-#define showcursor() if (atty) fputs ("\e[?25h", stdout)
+#include <err.h>
+#ifdef HAVE_TERMIOS_H
+# include <termios.h>
+#endif
+
 
 struct host {
 	LIST_ENTRY(host) link;
@@ -33,12 +34,47 @@ struct host {
 LIST_HEAD(, host) hl = LIST_HEAD_INITIALIZER();
 
 volatile sig_atomic_t running = 1;
+#ifdef HAVE_TERMIOS_H
+struct termios term;
+#endif
 static int atty;
 static int json;
 static int once;
 
 extern FILE *uget(char *url);
 
+
+static void hidecursor(void)
+{
+#ifdef HAVE_TERMIOS_H
+	struct termios c;
+#endif
+
+	if (!atty)
+		return;
+
+#ifdef HAVE_TERMIOS_H
+	if (tcgetattr(0, &term)) {
+		atty = 0;
+		return;
+	}
+	c = term;
+	c.c_lflag &= ~ECHO;
+	tcsetattr(0, TCSANOW, &c);
+#endif
+	fputs("\e[?25l", stdout);
+}
+
+static void showcursor(void)
+{
+	if (!atty)
+		return;
+
+#ifdef HAVE_TERMIOS_H
+	tcsetattr(0, TCSANOW, &term);
+#endif
+	fputs("\e[?25h", stdout);
+}
 
 static int host(char *name, char *url)
 {
