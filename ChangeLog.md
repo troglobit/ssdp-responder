@@ -4,7 +4,7 @@ Change Log
 All notable changes to the project are documented in this file.
 
 
-[v2.1][UNRELEASED]
+[v2.1][] - 2023-06-03
 ---------------------
 
 ### Changes
@@ -12,6 +12,7 @@ All notable changes to the project are documented in this file.
  - Dump received data from devices in `ssdp-scan -l debug`
  - Termios support for disabling `^C` output from `ssdp-scan`
  - Update copyright years, LICENSE file hash change
+ - Source `/etc/default/ssdpd` from systemd unit file
 
 ### Fixes
  - Fix #15: add fallback to `/var/lib/ssdpd/uuid.cache`
@@ -205,7 +206,7 @@ v1.0 - 2017-05-11
 Initial release
 
 
-[UNRELEASED]: https://github.com/troglobit/ssdp-responder/compare/v2.0...HEAD
+[UNRELEASED]: https://github.com/troglobit/ssdp-responder/compare/v2.1...HEAD
 [v2.1]: https://github.com/troglobit/ssdp-responder/compare/v2.0...v2.1
 [v2.0]: https://github.com/troglobit/ssdp-responder/compare/v1.9...v2.0
 [v1.9]: https://github.com/troglobit/ssdp-responder/compare/v1.8...v1.9
