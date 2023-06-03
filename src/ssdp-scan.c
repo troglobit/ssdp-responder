@@ -248,6 +248,7 @@ static void ssdp_read(int sd)
 		return;
 
 	buf[len] = 0;
+	logit(LOG_DEBUG, "%s(): buf[%s]", __func__, buf);
 
 	if (strstr(buf, "M-SEARCH *"))
 		return;
