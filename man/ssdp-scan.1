@@ -12,7 +12,7 @@
 .\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.a
-.Dd Oct 22, 2022
+.Dd Jun 3, 2023
 .Dt ssdp-scan 1
 .Os
 .Sh NAME
@@ -20,9 +20,10 @@
 .Nd Scan for SSDP capable devices on attached networks
 .Sh SYNOPSIS
 .Nm
-.Op Fl h
+.Op Fl hj
 .Op Fl l Ar LEVEL
 .Op Fl t Ar SEC
+.Op Ar IFACE Op Ar IFACE Op Ar ...
 .Sh DESCRIPTION
 .Nm
 is a tool for scanning for Simple Service Discovery Protocol (SSDP)
@@ -36,6 +37,10 @@ The following command line options are available:
 .Bl -tag -width "-l LEVEL "
 .It Fl h
 Show program help text.
+.It Fl j
+JSON output, best used with
+.Fl t Ar SEC
+option.
 .It Fl l Ar LEVEL
 Set log level to one of the following, default
 .Nm notice :
@@ -67,6 +72,25 @@ names are given as arguments,
 .Nm
 will run only on them.
 .El
+.Sh EXAMPLE
+.Bd -literal
+$ ssdp-scan -j -t 3
+ssdp-scan: Auto-stop in 3 seconds ...
+[
+  {
+    "name": "ReadyNAS Ultra [readynas]",
+    "url": "https://192.168.1.171/admin/"
+  },
+  {
+    "name": "readynas: ReadyNAS Ultra 4",
+    "url": "http://192.168.1.171:8200/"
+  },
+  {
+    "name": "Kodi (LibreELEC)",
+    "url": "http://192.168.1.226:8080/"
+  }
+]
+.Ed
 .Sh NOTES
 .Nm
 is very impatient.  In order to scan for hosts it sends
