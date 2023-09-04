@@ -99,6 +99,8 @@ extern int log_level;
 extern int log_opts;
 extern char uuid[42];
 extern char url[128];
+extern char fname[128];
+extern char model[128];
 extern char mfrurl[128];
 extern char mfrnm[128];
 extern int  ttl;

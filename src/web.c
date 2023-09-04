@@ -182,8 +182,8 @@ static int respond(int sd, struct sockaddr_in *sin)
 				logit(LOG_WARNING, "Failed returning status 404 to client: %s", strerror(errno));
 			return -1;
 		}
-
-		gethostname(hostname, sizeof(hostname));
+		if(!strlen(fname))
+			gethostname(fname, sizeof(fname));
 		if (mfrurl[0])
 			snprintf(manufacturer_url, sizeof(manufacturer_url),
 				 "  <manufacturerURL>%s</manufacturerURL>\r\n", mfrurl);
@@ -191,10 +191,10 @@ static int respond(int sd, struct sockaddr_in *sin)
 		logit(LOG_DEBUG, "Sending XML reply ...");
 		rc = snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION);
 		snprintf(&mesg[rc], sizeof(mesg) - rc, xml,
-			 hostname,
+			 fname,
 			 mfrnm,
 			 manufacturer_url,
-			 MODEL,
+			 model,
 			 uuid,
 			 compose_url(inet_ntoa(sin->sin_addr)));
 		if (send(sd, mesg, strlen(mesg), 0) < 0) {

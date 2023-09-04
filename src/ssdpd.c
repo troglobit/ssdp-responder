@@ -29,6 +29,8 @@ int   ttl = MC_TTL_DEFAULT;
 char *cachefn = NULL;
 char *ver = NULL;
 char *os  = NULL;
+char fname[128];
+char model[128];
 #ifdef MANUFACTURER_URL
 char  mfrurl[128] = MANUFACTURER_URL;
 #else
@@ -564,6 +566,8 @@ static int usage(int code)
 	       "    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID\n"
 	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
 	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"
+	       "    -D MODEL  Override modelName in the default description.xml\n"
+	       "    -f FNAME  Override friendlyName in the default description.xml\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
 	       "    -l LVL    Set log level: none, err, notice (default), info, debug\n"
@@ -606,7 +610,7 @@ int main(int argc, char *argv[])
 	int nlmon = 0;
 	int c;
 
-	while ((c = getopt(argc, argv, "c:d:hi:l:m:M:np:P:r:R:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "c:d:D:f:hi:l:m:M:np:P:r:R:st:u:vw")) != EOF) {
 		switch (c) {
 		case 'c':
 			cachefn = strdup(optarg);
@@ -615,6 +619,14 @@ int main(int argc, char *argv[])
 		case 'd':
 			description = optarg;
 			break;
+
+        case 'D':
+            strlcpy(model, optarg, sizeof(model));
+            break;
+
+        case 'f':
+            strlcpy(fname, optarg, sizeof(fname));
+            break;
 
 		case 'h':
 			return usage(0);
