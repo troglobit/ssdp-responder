@@ -30,7 +30,9 @@ char *cachefn = NULL;
 char *ver = NULL;
 char *os  = NULL;
 char fname[128];
-char model[128];
+char model_name[128] = " ";
+char model_number[128] = " ";
+char serial[128] = " ";
 #ifdef MANUFACTURER_URL
 char  mfrurl[128] = MANUFACTURER_URL;
 #else
@@ -566,7 +568,7 @@ static int usage(int code)
 	       "    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID\n"
 	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
 	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"
-	       "    -D MODEL  Override modelName in the default description.xml\n"
+	       "    -D MNAME  Override modelName in the default description.xml\n"
 	       "    -f FNAME  Override friendlyName in the default description.xml\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
@@ -581,8 +583,10 @@ static int usage(int code)
 	       "              The '%%s' is replaced with the IP address.  Default: http://%%s/\n"
 	       "    -P FILE   Override PID file location, absolute path required\n"
 	       "    -s        Use syslog, default unless running in foreground, -n\n"
+	       "    -S        Set serialNumber in the default description.xml\n"
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
 	       "    -u UUID   Custom UUID instead of auto-generating one\n"
+	       "    -U MNUM   Set modelNumber in the default description.xml\n"
 	       "    -v        Show program version\n"
 	       "    -w        Disable built-in micro HTTP server on port %d\n"
 	       "\n"
@@ -610,7 +614,7 @@ int main(int argc, char *argv[])
 	int nlmon = 0;
 	int c;
 
-	while ((c = getopt(argc, argv, "c:d:D:f:hi:l:m:M:np:P:r:R:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "c:d:D:f:hi:l:m:M:np:P:r:R:s:S:t:u:U:vw")) != EOF) {
 		switch (c) {
 		case 'c':
 			cachefn = strdup(optarg);
@@ -620,13 +624,13 @@ int main(int argc, char *argv[])
 			description = optarg;
 			break;
 
-        case 'D':
-            strlcpy(model, optarg, sizeof(model));
-            break;
+		case 'D':
+			strlcpy(model_name, optarg, sizeof(model_name));
+			break;
 
-        case 'f':
-            strlcpy(fname, optarg, sizeof(fname));
-            break;
+		case 'f':
+			strlcpy(fname, optarg, sizeof(fname));
+			break;
 
 		case 'h':
 			return usage(0);
@@ -678,6 +682,10 @@ int main(int argc, char *argv[])
 			do_syslog++;
 			break;
 
+		case 'S':
+			strlcpy(serial, optarg, sizeof(serial));
+			break;
+
 		case 't':
 			ttl = atoi(optarg);
 			if (ttl < 1 || ttl > 255)
@@ -686,6 +694,10 @@ int main(int argc, char *argv[])
 
 		case 'u':
 			snprintf(uuid, sizeof(uuid), "uuid:%s", optarg);
+			break;
+
+		case 'U':
+			strlcpy(model_number, optarg, sizeof(model_number));
 			break;
 
 		case 'v':

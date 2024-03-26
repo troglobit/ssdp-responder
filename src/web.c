@@ -48,8 +48,11 @@ const char *xml =
 	" <device>\r\n"
 	"  <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>\r\n"
 	"  <friendlyName>%s</friendlyName>\r\n"
-	"  <manufacturer>%s</manufacturer>\r\n%s"
+	"  <manufacturer>%s</manufacturer>\r\n"
+	"  <manufacturerURL>%s</manufacturerURL>"
 	"  <modelName>%s</modelName>\r\n"
+	"  <modelNumber>%s</modelNumber>\r\n"
+	"  <serialNumber>%s</serialNumber>\r\n"
 	"  <UDN>%s</UDN>\r\n"
 	"  <presentationURL>%s</presentationURL>\r\n"
 	" </device>\r\n"
@@ -193,8 +196,10 @@ static int respond(int sd, struct sockaddr_in *sin)
 		snprintf(&mesg[rc], sizeof(mesg) - rc, xml,
 			 fname,
 			 mfrnm,
-			 manufacturer_url,
-			 model,
+			 mfrurl,
+			 model_name,
+			 model_number,
+			 serial,
 			 uuid,
 			 compose_url(inet_ntoa(sin->sin_addr)));
 		if (send(sd, mesg, strlen(mesg), 0) < 0) {
