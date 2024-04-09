@@ -78,6 +78,15 @@
 #define NELEMS(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
+#ifndef SOCK_NONBLOCK
+	#include <fcntl.h>
+	#define SOCK_NONBLOCK O_NONBLOCK
+#endif
+#ifndef SOCK_CLOEXEC
+	#include <fcntl.h>
+	#define SOCK_CLOEXEC FD_CLOEXEC
+#endif
+
 struct ifsock {
 	LIST_ENTRY(ifsock) link;
 
@@ -101,6 +110,8 @@ extern char uuid[42];
 extern char url[128];
 extern char fname[128];
 extern char model[128];
+extern char modelNumber[128];
+extern char serialNumber[128];
 extern char mfrurl[128];
 extern char mfrnm[128];
 extern int  ttl;
