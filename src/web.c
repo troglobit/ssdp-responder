@@ -46,13 +46,31 @@ const char *xml =
 	"   <minor>0</minor>\r\n"
 	" </specVersion>\r\n"
 	" <device>\r\n"
-	"  <deviceType>urn:schemas-upnp-org:device:InternetGatewayDevice:1</deviceType>\r\n"
+	"  <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>\r\n"
 	"  <friendlyName>%s</friendlyName>\r\n"
 	"  <manufacturer>%s</manufacturer>\r\n%s"
 	"  <modelName>%s</modelName>\r\n"
+	"  <modelNumber>%s</modelNumber>\r\n"
+	"  <serialNumber>%s</serialNumber>"
 	"  <UDN>%s</UDN>\r\n"
 	"  <presentationURL>%s</presentationURL>\r\n"
 	" </device>\r\n"
+	//"<iconList>"	
+	//"<icon>"	
+	//"<mimetype>image/png</mimetype>"	
+	//"<height>48</height>"	
+	//"<width>48</width>"	
+	//"<depth>24</depth>"	
+	//"<url>icon48.png</url>"	
+	//"</icon>"	
+	//"<icon>"	
+	//"<mimetype>image/png</mimetype>"	
+	//"<height>120</height>"	
+	//"<width>120</width>"	
+	//"<depth>24</depth>"	
+	//"<url>icon120.png</url>"	 
+	//"</icon>"	
+	//"</iconList>"
 	"</root>\r\n"
 	"\r\n";
 
@@ -195,6 +213,8 @@ static int respond(int sd, struct sockaddr_in *sin)
 			 mfrnm,
 			 manufacturer_url,
 			 model,
+			 modelNumber,
+			 serialNumber,
 			 uuid,
 			 compose_url(inet_ntoa(sin->sin_addr)));
 		if (send(sd, mesg, strlen(mesg), 0) < 0) {

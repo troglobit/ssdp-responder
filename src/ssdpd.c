@@ -31,6 +31,8 @@ char *ver = NULL;
 char *os  = NULL;
 char fname[128];
 char model[128];
+char modelNumber[128];
+char serialNumber[128];
 #ifdef MANUFACTURER_URL
 char  mfrurl[128] = MANUFACTURER_URL;
 #else
@@ -46,7 +48,7 @@ size_t ifnum;
 static char *supported_types[] = {
 	SSDP_ST_ALL,
 	"upnp:rootdevice",
-	"urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+	"urn:schemas-upnp-org:device:Basic:1",
 	uuid,
 	NULL
 };
@@ -559,7 +561,7 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsvw] [-c FILE] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL]\n"
+	printf("Usage: %s [-hnsvw] [-c FILE] [-D MODEL] [-N MODELN] [-S SERIAL] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL]\n"
 	       "                      [-p URL] [-P FILE] [-r SEC] [-R NUM] [-t TTL] [-u UUID]\n"
 	       "                      [IFACE [IFACE ...]]\n"
 	       "\n"
@@ -567,6 +569,8 @@ static int usage(int code)
 	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
 	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"
 	       "    -D MODEL  Override modelName in the default description.xml\n"
+	       "    -N MODELN Override modelNumber in the default description.xml\n"
+	       "    -S SERIAL Override serialNumber in the default description.xml\n"
 	       "    -f FNAME  Override friendlyName in the default description.xml\n"
 	       "    -h        This help text\n"
 	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
@@ -610,7 +614,7 @@ int main(int argc, char *argv[])
 	int nlmon = 0;
 	int c;
 
-	while ((c = getopt(argc, argv, "c:d:D:f:hi:l:m:M:np:P:r:R:st:u:vw")) != EOF) {
+	while ((c = getopt(argc, argv, "c:d:D:f:hi:l:m:M:np:P:r:R:st:u:vwN:S:")) != EOF) {
 		switch (c) {
 		case 'c':
 			cachefn = strdup(optarg);
@@ -622,6 +626,14 @@ int main(int argc, char *argv[])
 
         case 'D':
             strlcpy(model, optarg, sizeof(model));
+            break;
+			
+		case 'N':
+            strlcpy(modelNumber, optarg, sizeof(model));
+            break;
+			
+		case 'S':
+            strlcpy(serialNumber, optarg, sizeof(model));
             break;
 
         case 'f':
