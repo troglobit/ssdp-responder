@@ -29,10 +29,12 @@ int   ttl = MC_TTL_DEFAULT;
 char *cachefn = NULL;
 char *ver = NULL;
 char *os  = NULL;
+char deviceType[64] = "Basic";
 char fname[128];
 char model[128];
 char modelNumber[128];
 char serialNumber[128];
+char iconFile[256];
 #ifdef MANUFACTURER_URL
 char  mfrurl[128] = MANUFACTURER_URL;
 #else
@@ -561,28 +563,31 @@ static void signal_init(void)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-hnsvw] [-c FILE] [-D MODEL] [-N MODELN] [-S SERIAL] [-d URL] [-i SEC] [-l LEVEL] [-m NAME] [-M URL]\n"
+	printf("Usage: %s [-hnsvw] [-c FILE] [-D MODEL] [-N MODELN] [-S SERIAL] [-d URL] [-i SEC] [-I ICON] [-T DTYPE] [-l LEVEL] [-m NAME] [-M URL]\n"
 	       "                      [-p URL] [-P FILE] [-r SEC] [-R NUM] [-t TTL] [-u UUID]\n"
 	       "                      [IFACE [IFACE ...]]\n"
 	       "\n"
-	       "    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID\n"
-	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
-	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"
+	       "    SSDP Params:\n"
+		   "    -T DTYPE  Override deviceType in the default description.xml\n"
 	       "    -D MODEL  Override modelName in the default description.xml\n"
 	       "    -N MODELN Override modelNumber in the default description.xml\n"
 	       "    -S SERIAL Override serialNumber in the default description.xml\n"
 	       "    -f FNAME  Override friendlyName in the default description.xml\n"
-	       "    -h        This help text\n"
-	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"
-	       "    -l LVL    Set log level: none, err, notice (default), info, debug\n"
-	       "    -m NAME   Override manufacturer in the default description.xml\n"
+		   "    -m NAME   Override manufacturer in the default description.xml\n"
 	       "    -M URL    Override manufacturerURL in the default description.xml\n"
+		   "    -I ICON   Icon file (only png file, required 128x128px)\n"
+		   "    -p URL    Override presentationURL (WebUI) in the default description.xml\n"
+	       "              The '%%s' is replaced with the IP address.  Default: http://%%s/\n"		   
+	       "    -c FILE   Path to alternate ssdpd.cache to store and/or read the UUID\n"
+	       "    -d URL    Override UPnP description.xml URL in announcements.  The '%%s' in\n"
+	       "              the URL is replaced with the IP, e.g. https://%%s:1901/main.xml\n"       
+	       "    -h        This help text\n"
+	       "    -i SEC    SSDP notify interval (30-900), default %d sec\n"	       
+	       "    -l LVL    Set log level: none, err, notice (default), info, debug\n"	       
 	       "    -n        Run in foreground, do not daemonize by default\n"
 	       "    -r SEC    Interface refresh interval (5-1800), default %d sec\n"
 	       "    -R NUM    Initial retries, using 10 sec refresh interval, default 3 times\n"
 	       "              Note: unused on systems with netlink interface monitoring.\n"
-	       "    -p URL    Override presentationURL (WebUI) in the default description.xml\n"
-	       "              The '%%s' is replaced with the IP address.  Default: http://%%s/\n"
 	       "    -P FILE   Override PID file location, absolute path required\n"
 	       "    -s        Use syslog, default unless running in foreground, -n\n"
 	       "    -t TTL    TTL for multicast frames, default 2, according to the UDA\n"
@@ -614,7 +619,7 @@ int main(int argc, char *argv[])
 	int nlmon = 0;
 	int c;
 
-	while ((c = getopt(argc, argv, "c:d:D:f:hi:l:m:M:np:P:r:R:st:u:vwN:S:")) != EOF) {
+	while ((c = getopt(argc, argv, "c:d:D:f:hi:l:m:M:np:P:r:R:st:u:vwN:S:I:T:")) != EOF) {
 		switch (c) {
 		case 'c':
 			cachefn = strdup(optarg);
@@ -627,13 +632,20 @@ int main(int argc, char *argv[])
         case 'D':
             strlcpy(model, optarg, sizeof(model));
             break;
-			
+		
+		case 'T':
+            strlcpy(deviceType, optarg, sizeof(deviceType));
+            break;		
 		case 'N':
-            strlcpy(modelNumber, optarg, sizeof(model));
+            strlcpy(modelNumber, optarg, sizeof(modelNumber));
             break;
 			
 		case 'S':
-            strlcpy(serialNumber, optarg, sizeof(model));
+            strlcpy(serialNumber, optarg, sizeof(serialNumber));
+            break;
+			
+		case 'I':
+            strlcpy(iconFile, optarg, sizeof(iconFile));
             break;
 
         case 'f':

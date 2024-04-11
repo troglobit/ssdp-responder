@@ -63,6 +63,10 @@
 # define LOCATION_PORT       8080
 #endif
 #define LOCATION_DESC        "/description.xml"
+#define LOCATION_ICON        "/icon.png"
+
+#define MIME_XML             "text/xml"
+#define MIME_PNG             "image/png"
 
 #define SSDP_ST_ALL          "ssdp:all"
 
@@ -108,10 +112,12 @@ extern int log_level;
 extern int log_opts;
 extern char uuid[42];
 extern char url[128];
+extern char deviceType[64];
 extern char fname[128];
 extern char model[128];
 extern char modelNumber[128];
 extern char serialNumber[128];
+extern char iconFile[256];
 extern char mfrurl[128];
 extern char mfrnm[128];
 extern int  ttl;
