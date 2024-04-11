@@ -46,7 +46,7 @@ const char *xml =
 	"   <minor>0</minor>\r\n"
 	" </specVersion>\r\n"
 	" <device>\r\n"
-	"  <deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>\r\n"
+	"  <deviceType>urn:schemas-upnp-org:device:%s:1</deviceType>\r\n"
 	"  <friendlyName>%s</friendlyName>\r\n"
 	"  <manufacturer>%s</manufacturer>\r\n%s"
 	"  <modelName>%s</modelName>\r\n"
@@ -54,23 +54,16 @@ const char *xml =
 	"  <serialNumber>%s</serialNumber>"
 	"  <UDN>%s</UDN>\r\n"
 	"  <presentationURL>%s</presentationURL>\r\n"
+	"  <iconList>"	
+	"   <icon>"	
+	"    <mimetype>image/png</mimetype>"	
+	"    <height>120</height>"	
+	"    <width>120</width>"	
+	"    <depth>24</depth>"	
+	"    <url>icon.png</url>"	
+	"   </icon>"		
+	"  </iconList>"
 	" </device>\r\n"
-	//"<iconList>"	
-	//"<icon>"	
-	//"<mimetype>image/png</mimetype>"	
-	//"<height>48</height>"	
-	//"<width>48</width>"	
-	//"<depth>24</depth>"	
-	//"<url>icon48.png</url>"	
-	//"</icon>"	
-	//"<icon>"	
-	//"<mimetype>image/png</mimetype>"	
-	//"<height>120</height>"	
-	//"<width>120</width>"	
-	//"<depth>24</depth>"	
-	//"<url>icon120.png</url>"	 
-	//"</icon>"	
-	//"</iconList>"
 	"</root>\r\n"
 	"\r\n";
 
@@ -142,6 +135,12 @@ static int validate_http(int sd, char *http)
 	return 0;
 }
 
+static int errorNotFound(int sd){
+	if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
+		logit(LOG_WARNING, "Failed returning status 404 to client: %s", strerror(errno));
+	return -1;
+}
+
 static int respond(int sd, struct sockaddr_in *sin)
 {
 	struct pollfd pfd = {
@@ -151,7 +150,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 	const char *head = "HTTP/1.1 200 OK\r\n"
 		"Date: %s\r\n"
 		"Server: ssdp-responder/%s\r\n"
-		"Content-Type: text/xml\r\n"
+		"Content-Type: %s\r\n"
 		"Connection: close\r\n"
 		"\r\n";
 	char manufacturer_url[192] = "";
@@ -187,7 +186,7 @@ static int respond(int sd, struct sockaddr_in *sin)
 		if (validate_http(sd, reqline[2]))
 			return -1;
 
-		snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION);
+		snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION, MIME_XML);
 		if (send(sd, mesg, strlen(mesg), 0) < 0)
 			return -1;
 	} else if (strncmp(reqline[0], "GET", 4) == 0) {
@@ -195,11 +194,57 @@ static int respond(int sd, struct sockaddr_in *sin)
 			return -1;
 
 		/* XXX: Add support for icon as well */
-		if (!reqline[1] || !strstr(reqline[1], LOCATION_DESC)) {
-			if (write(sd, "HTTP/1.1 404 Not Found\r\n", 24) < 0)
-				logit(LOG_WARNING, "Failed returning status 404 to client: %s", strerror(errno));
-			return -1;
+		if (!reqline[1] || (!strstr(reqline[1], LOCATION_DESC) && !strstr(reqline[1], LOCATION_ICON))) {
+			return errorNotFound(sd);
 		}
+		
+		if(strstr(reqline[1], LOCATION_ICON)){
+			if(!strlen(iconFile)){
+				return errorNotFound(sd);
+			}
+			
+			FILE *fp = fopen(iconFile, "r"); //open file
+			if(fp)
+			{
+				logit(LOG_DEBUG, "Sending Icon reply ...");
+				//Calculate file size
+				int64_t _file_size = 0;
+				fseek(fp, 0, SEEK_END);
+				_file_size = ftello(fp);
+				
+				//malloc buffer for image
+				uint8_t *buffer = (uint8_t*)malloc(_file_size + 1);
+				if(buffer == NULL){
+					logit(LOG_WARNING, "Failed malloc()");
+					return errorNotFound(sd);
+				}
+				fseek(fp, 0, SEEK_SET); //move to start file
+				
+				//Read image file in buffer
+				if(!fread(buffer, _file_size, 1, fp)){
+					logit(LOG_DEBUG, "Error reading image file");
+					return errorNotFound(sd);
+				}
+				
+				snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION, MIME_PNG); //Generate head string
+				//Send HTTP Headers
+				if (send(sd, mesg, strlen(mesg), 0) < 0) {
+					logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));
+				}
+				//Send Image buffer
+				if (send(sd, buffer, _file_size, 0) < 0) {
+					logit(LOG_WARNING, "Failed sending file to client: %s", strerror(errno));
+				}
+				fclose(fp); //Close file
+				free(buffer); //Free buffer
+			} 
+			else{
+				logit(LOG_DEBUG, "Icon file not found ...");
+				return errorNotFound(sd);
+			}
+			return 0;
+		}
+		
 		if(!strlen(fname))
 			gethostname(fname, sizeof(fname));
 		if (mfrurl[0])
@@ -207,8 +252,9 @@ static int respond(int sd, struct sockaddr_in *sin)
 				 "  <manufacturerURL>%s</manufacturerURL>\r\n", mfrurl);
 
 		logit(LOG_DEBUG, "Sending XML reply ...");
-		rc = snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION);
+		rc = snprintf(mesg, sizeof(mesg), head, compose_time(), VERSION, MIME_XML);
 		snprintf(&mesg[rc], sizeof(mesg) - rc, xml,
+			 deviceType,
 			 fname,
 			 mfrnm,
 			 manufacturer_url,
